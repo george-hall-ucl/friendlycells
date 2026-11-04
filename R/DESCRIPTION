@@ -2,9 +2,18 @@ Package: friendlyspots
 Title: Spatial Similarity of Spatial Transcriptomics Samples
 Version: 0.1.0
 Authors@R: c(
-    person("George", "Hall", email = "george.hall@ucl.ac.uk", role = c("aut", "cre"),
-           comment = c(affiliation = "University College London")),
-    person("University College London", role = "cph"))
+    person(given = "George",
+           family = "Hall",
+           role = c("aut", "cre"),
+           email = "george.hall@ucl.ac.uk",
+           comment = c(ORCID = "0000-0002-4828-0668")),
+    person(given = "Sergi",
+           family = "Castellano",
+           role = c("aut"),
+           email = "s.castellano@ucl.ac.uk",
+           comment = c(ORCID = "0000-0002-5819-4210")),
+    person(given = "University College London",
+           role = c("cph")))
 Description: Computes the similarity between spatial transcriptomics
     samples from counts of label-to-label connections between neighboring
     spots.

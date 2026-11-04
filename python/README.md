@@ -46,6 +46,8 @@ identical, 0 = least similar pair.
   different even if their underlying spatial features are similar.
 - `pools={"group_1": ["sample_1", "sample_2"], "group_2": ["sample_3"]}`: sum
   connection counts within groups before comparing.
+- `only_transitions=True`: only count connections between spots with distinct
+  labels (i.e. borders), not between spots with the same label.
 
 ### Example
 
@@ -53,7 +55,7 @@ Uses four mouse brain sections from 10x Genomics (two anterior, two posterior),
 with each spot labelled by its most enriched of five marker genes.
 
 <details><summary>Setup: download and label the data, define plotting helpers (click to expand)</summary>
-### Change Test
+
 
 ``` python
 # To rebuild this README from README.Rmd, run knitr::knit("README.Rmd") in R

@@ -47,6 +47,8 @@ identical, 0 = least similar pair.
   spatially different even if their underlying spatial features are similar.
 - `pools = list(group_1 = c("sample_1", "sample_2"), group_2 = "sample_3")`:
   sum connection counts within groups before comparing.
+- `only_transitions = TRUE`: only count connections between spots with
+  distinct labels (i.e. borders), not between spots with the same label.
 
 ### Example
 

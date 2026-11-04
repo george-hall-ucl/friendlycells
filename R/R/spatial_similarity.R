@@ -1,21 +1,22 @@
 #' Spatial similarity between spatial transcriptomics samples
 #'
 #' @param samples Named list of data frames, one per sample, with columns
-#'   `x`, `y` (positions in micrometres) and `label`.
+#'   `array_row`, `array_col` (hexagonal grid array coordinates) and `label`.
 #' @param normalize Divide each sample's connection counts by their total.
 #' @param pools Optional named list mapping pool names to sample names;
 #'   connection counts are summed within each pool.
-#' @param radius Neighbourhood radius in micrometres. The default
-#'   includes the six immediate Visium neighbours (~100 um apart, allowing for
-#'   position jitter) but not the next ring at ~173 um.
-#' @return Symmetric similarity matrix with values in \[0, 1\].
+#' @param only_transitions If `TRUE`, only count connections between spots with
+#'   distinct labels (i.e. borders); does not count connections between spots
+#'   with the same label.
+#' @return Symmetric similarity matrix with values in \[0, 1\], or `NA` for
+#'   samples with no neighboring spots when `normalize = TRUE`.
 #' @examples
 #' samples <- list(
-#'   a = data.frame(x = c(0, 100, 50), y = c(0, 0, 86.6),
+#'   a = data.frame(array_row = c(0, 0, 1), array_col = c(0, 2, 1),
 #'                  label = c("x", "y", "x")),
-#'   b = data.frame(x = c(0, 100, 200), y = c(0, 0, 0),
+#'   b = data.frame(array_row = c(0, 0, 0), array_col = c(0, 2, 4),
 #'                  label = c("x", "x", "y")),
-#'   c = data.frame(x = c(0, 100), y = c(0, 0),
+#'   c = data.frame(array_row = c(0, 0), array_col = c(0, 2),
 #'                  label = c("y", "y"))
 #' )
 #' spatial_similarity(samples)
@@ -23,7 +24,7 @@
 #' @importFrom stats dist
 #' @export
 spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
-                               radius = 105) {
+                               only_transitions = FALSE) {
   if (anyNA(unlist(lapply(samples, function(s) as.character(s$label))))) {
     # e.g. read.csv() reads a label literally called "NA" as missing
     warning("Some labels are 'NA'. These will be treated as a label called ",
@@ -37,22 +38,42 @@ spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
   # Sorted so floating-point results don't depend on sample order
   labels <- sort(unique(unlist(lapply(samples, function(s) s$label))))
   counts <- do.call(rbind, lapply(samples, connection_counts, labels = labels,
-                                   radius = radius))
+                                  only_transitions = only_transitions))
   if (!is.null(pools)) {
     counts <- do.call(rbind, lapply(pools, function(p) {
       colSums(counts[p, , drop = FALSE])
     }))
   }
-  if (normalize) counts <- counts / rowSums(counts)
+  if (normalize) {
+    empty <- rowSums(counts) == 0
+    if (any(empty)) {
+      warning("Similarities are NA for samples with no neighboring spots",
+              if (only_transitions) " with different labels (no transitions)",
+              ": ", paste(rownames(counts)[empty], collapse = ", "))
+    }
+    counts <- counts / rowSums(counts)
+  }
   d <- as.matrix(dist(counts))
-  1 - d / max(d)
+  # dist() puts 0 on the diagonal even for NA rows
+  diag(d)[is.na(rowSums(counts))] <- NA
+  # Identical samples give a max distance of 0, so don't divide by it
+  d_max <- max(0, d, na.rm = TRUE)
+  if (d_max > 0) d <- d / d_max
+  1 - d
 }
 
-connection_counts <- function(sample, labels, radius) {
+# Hexagonal Visium neighbors in array coordinates.
+hex_offsets <- list(c(0, -2), c(0, 2), c(-1, -1), c(-1, 1), c(1, -1), c(1, 1))
+
+connection_counts <- function(sample, labels, only_transitions = FALSE) {
   label <- factor(sample$label, levels = labels)
-  nb <- as.matrix(dist(sample[, c("x", "y")])) <= radius
-  diag(nb) <- FALSE
-  onehot <- outer(as.integer(label), seq_along(labels), "==") * 1
-  counts <- t(onehot) %*% nb %*% onehot
+  key <- paste(sample$array_row, sample$array_col)
+  counts <- matrix(0, length(labels), length(labels))
+  for (o in hex_offsets) {
+    nbr <- match(paste(sample$array_row + o[1], sample$array_col + o[2]), key)
+    hit <- !is.na(nbr)
+    counts <- counts + unclass(table(label[hit], label[nbr[hit]]))
+  }
+  if (only_transitions) diag(counts) <- 0
   as.vector(t(counts))
 }

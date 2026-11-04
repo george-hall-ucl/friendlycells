@@ -7,7 +7,11 @@ name = "friendlyspots"
 version = "0.1.0"
 description = "Spatial similarity of spatial transcriptomics samples"
 readme = "README.md"
-authors = [{ name = "George Hall", email = "george.hall@ucl.ac.uk" }]
+authors = [
+    { name = "George Hall", email = "george.hall@ucl.ac.uk" },
+    { name = "Sergi Castellano", email = "s.castellano@ucl.ac.uk" },
+]
+maintainers = [{ name = "George Hall", email = "george.hall@ucl.ac.uk" }]
 requires-python = ">=3.9"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]

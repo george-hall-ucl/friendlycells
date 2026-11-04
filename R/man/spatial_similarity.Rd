@@ -4,7 +4,12 @@
 \alias{spatial_similarity}
 \title{Spatial similarity between spatial transcriptomics samples}
 \usage{
-spatial_similarity(samples, normalize = TRUE, pools = NULL)
+spatial_similarity(
+  samples,
+  normalize = TRUE,
+  pools = NULL,
+  only_transitions = FALSE
+)
 }
 \arguments{
 \item{samples}{Named list of data frames, one per sample, with columns
@@ -14,9 +19,14 @@ spatial_similarity(samples, normalize = TRUE, pools = NULL)
 
 \item{pools}{Optional named list mapping pool names to sample names;
 connection counts are summed within each pool.}
+
+\item{only_transitions}{If \code{TRUE}, only count connections between spots with
+distinct labels (i.e. borders); does not count connections between spots
+with the same label.}
 }
 \value{
-Symmetric similarity matrix with values in [0, 1].
+Symmetric similarity matrix with values in [0, 1], or \code{NA} for
+samples with no neighboring spots when \code{normalize = TRUE}.
 }
 \description{
 Spatial similarity between spatial transcriptomics samples
