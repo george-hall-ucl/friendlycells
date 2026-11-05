@@ -2,3 +2,4 @@
 
 export(spatial_similarity)
 importFrom(stats,dist)
+importFrom(stats,median)

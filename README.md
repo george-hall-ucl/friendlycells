@@ -5,7 +5,7 @@
 Compute similarity between spatial transcriptomics samples based on which
 labels (e.g. cell types) border one another.
 
-`friendlyspots` is only compatible with original (non-HD) Visium.
+Compatible with Visium, Visium HD (binned or segmented) and Xenium.
 
 - R package: [`R/`](R/)
 - Python package: [`python/`](python/)

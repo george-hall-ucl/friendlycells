@@ -15,22 +15,18 @@ labels (e.g. cell types) border one another.
 pip install "git+https://github.com/george-hall-ucl/friendlyspots#subdirectory=python"
 ```
 
-Requires `pandas` and `numpy`. Also available as an
+Requires `pandas`, `numpy` and `scipy`. Also available as an
 [R package](https://github.com/george-hall-ucl/friendlyspots/tree/main/R).
 
 ## Usage
 
-`friendlyspots` is only compatible with original (non-HD) Visium.
+Compatible with Visium, Visium HD (binned or segmented) and Xenium.
 
 ```python
 from friendlyspots import spatial_similarity
 
-# Create one DataFrame per sample, with columns for array_row, array_col,
-# label.
-#   e.g. starting from a sample's AnnData object `adata`:
-#   df1 = adata.obs[["array_row", "array_col"]].assign(
-#       label=adata.obs["cell_type"]
-#   )
+# One DataFrame per sample, with columns x, y (positions, e.g. in pixels or
+# micrometres) and label (see Extracting positions below)
 samples = {"sample_1": df1, "sample_2": df2, "sample_3": df3}
 
 sim = spatial_similarity(samples)
@@ -48,6 +44,52 @@ identical, 0 = least similar pair.
   connection counts within groups before comparing.
 - `only_transitions=True`: only count connections between spots with distinct
   labels (i.e. borders), not between spots with the same label.
+- `neighborhood`: how to find each spot's or cell's neighbors. The default,
+  `"auto"`, uses `"radius"` (all within `radius`) if the positions lie on a
+  grid, and `"delaunay"` (the cells surrounding each cell) otherwise, with a
+  message saying which. `"knn"` (the `k` nearest, default 6) is also available.
+- `radius`: by default it's set from the spacing of the data, the median
+  distance from each spot or cell to its nearest neighbor over all samples,
+  times 1.2 for `"radius"` or 3 for `"delaunay"` (where it's the maximum link
+  length). Give it, in the units of `x` and `y`, to widen or narrow
+  neighborhoods.
+
+### Extracting positions
+
+For Visium read with scanpy or squidpy, and for tables read with
+[spatialdata-io](https://spatialdata.scverse.org/projects/io/) (Xenium's
+`adata = sdata.tables["table"]`, or Visium HD bins' e.g.
+`adata = sdata.tables["square_008um"]`), with cell types in
+`adata.obs["cell_type"]`:
+
+``` python
+x, y = adata.obsm["spatial"].T
+df = pd.DataFrame({"x": x, "y": y, "label": adata.obs["cell_type"]})
+```
+
+For Visium HD segmented cells, `sdata.tables["cell_segmentations"]` has no
+`obsm["spatial"]`, so take the centroids of the cells' outlines instead:
+
+``` python
+adata = sdata.tables["cell_segmentations"]
+cells = sdata.shapes[adata.obs["region"].iloc[0]].centroid.loc[adata.obs_names]
+df = pd.DataFrame({"x": cells.x, "y": cells.y, "label": adata.obs["cell_type"]})
+```
+
+### Neighbors
+
+With the defaults, each sample's spots or cells are linked to:
+
+- Visium spots: their six immediate neighbors.
+- Visium HD bins: their four side neighbors. Set `radius` to 1.5 times the bin
+  size to add the diagonals.
+- Segmented cells (Xenium, or Visium HD with cell segmentation): the cells
+  surrounding them, ignoring links across gaps.
+
+Positions can be the pixel or micrometre coordinates from Space Ranger or
+Xenium outputs, as long as all samples use the same units. As the spacing is
+taken over all samples, don't mix samples in different units, or from
+different technologies.
 
 ### Example
 
@@ -66,6 +108,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import squidpy as sq
 
@@ -95,8 +138,8 @@ def plot_slices(samples):
     fig, axes = plt.subplots(1, len(samples), layout="constrained")
     for ax, (name, df) in zip(axes, samples.items()):
         ax.scatter(
-            df["array_col"],
-            -df["array_row"] * np.sqrt(3),
+            df["x"],
+            -df["y"],
             c=df["label"].map(colors),
             s=3,
             linewidths=0,
@@ -138,23 +181,28 @@ def plot_similarity(sim):
 
 </details>
 
-Each sample is a DataFrame of spot array coordinates and labels:
+Each sample is a DataFrame of spot positions (in full-resolution image
+pixels) and labels:
 
 
 ``` python
 from friendlyspots import spatial_similarity
 
 samples = {
-    name: adata.obs[["array_row", "array_col"]].assign(label=labels[name])
+    name: pd.DataFrame({
+        "x": adata.obsm["spatial"][:, 0],
+        "y": adata.obsm["spatial"][:, 1],
+        "label": labels[name],
+    }, index=adata.obs_names)
     for name, adata in adatas.items()
 }
 print(samples["anterior_1"].head())
-#>                     array_row  array_col    label
-#> AAACAAGTATCTCCCA-1         50        102      Mbp
-#> AAACACCAATAACTGC-1         59         19  Slc17a7
-#> AAACAGAGCGACTCCT-1         14         94  Slc17a7
-#> AAACAGCTTTCAGAAG-1         43          9      Mbp
-#> AAACAGGGTCTATATT-1         47         13     Penk
+#>                        x     y    label
+#> AAACAAGTATCTCCCA-1  8500  7474      Mbp
+#> AAACACCAATAACTGC-1  2788  8552  Slc17a7
+#> AAACAGAGCGACTCCT-1  7950  3163  Slc17a7
+#> AAACAGCTTTCAGAAG-1  2100  6636      Mbp
+#> AAACAGGGTCTATATT-1  2375  7115     Penk
 ```
 
 
@@ -167,6 +215,7 @@ plot_slices(samples)
 
 ``` python
 sim = spatial_similarity(samples)
+#> Using neighborhood="radius", as the positions lie on a grid.
 print(sim.round(2))
 #>              anterior_1  anterior_2  posterior_1  posterior_2
 #> anterior_1         1.00        0.93         0.00         0.01

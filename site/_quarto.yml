@@ -6,6 +6,7 @@ project:
   type: website
   resources:
     - spots.js
+    - lang.js
 
 execute:
   freeze: auto
@@ -35,4 +36,6 @@ format:
     toc: true
     css: styles.css
     include-after-body:
-      text: <script src="spots.js"></script>
+      text: |
+        <script src="spots.js"></script>
+        <script src="lang.js"></script>

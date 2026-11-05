@@ -11,3 +11,8 @@
   position: relative;
   z-index: 1;
 }
+
+/* R or Python wording, chosen by lang.js; without it, both show as "R / Python" */
+:root[data-lang="r"] .lang-py,
+:root[data-lang="py"] .lang-r { display: none; }
+:root:not([data-lang]) .lang-r + .lang-py::before { content: " / "; }

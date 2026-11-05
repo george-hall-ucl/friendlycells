@@ -19,23 +19,18 @@ labels (e.g. cell types) border one another.
 remotes::install_github("george-hall-ucl/friendlyspots", subdir = "R")
 ```
 
-Requires only base R. Also available as a
+Requires `dbscan` and `deldir`. Also available as a
 [Python package](https://github.com/george-hall-ucl/friendlyspots/tree/main/python).
 
 ## Usage
 
-`friendlyspots` is only compatible with original (non-HD) Visium.
+Compatible with Visium, Visium HD (binned or segmented) and Xenium.
 
 ```r
 library(friendlyspots)
 
-# Create one data frame per sample, with columns for array_row, array_col,
-# label.
-#   e.g. starting from a sample's Seurat object `cells` (requires a VisiumV1
-#   image, the default before Seurat 5.1):
-#   coords <- cells@images[[1]]@coordinates
-#   df1 <- data.frame(array_row = coords$row, array_col = coords$col,
-#                     label = cells$cell_type[rownames(coords)])
+# One data frame per sample, with columns x, y (positions, e.g. in pixels or
+# micrometres) and label (see Extracting positions below)
 samples <- list(sample_1 = df1, sample_2 = df2, sample_3 = df3)
 
 sim <- spatial_similarity(samples)
@@ -53,6 +48,44 @@ identical, 0 = least similar pair.
   sum connection counts within groups before comparing.
 - `only_transitions = TRUE`: only count connections between spots with
   distinct labels (i.e. borders), not between spots with the same label.
+- `neighborhood`: how to find each spot's or cell's neighbors. The default,
+  `"auto"`, uses `"radius"` (all within `radius`) if the positions lie on a
+  grid, and `"delaunay"` (the cells surrounding each cell) otherwise, with a
+  message saying which. `"knn"` (the `k` nearest, default 6) is also available.
+- `radius`: by default it's set from the spacing of the data, the median
+  distance from each spot or cell to its nearest neighbor over all samples,
+  times 1.2 for `"radius"` or 3 for `"delaunay"` (where it's the maximum link
+  length). Give it, in the units of `x` and `y`, to widen or narrow
+  neighborhoods.
+
+### Extracting positions
+
+For a Seurat object `obj` from `Load10X_Spatial()` (Visium; or Visium HD,
+with e.g. `bin.size = 8` for bins or `bin.size = "polygons"` for segmented
+cells) or `LoadXenium()` (Xenium), with cell types in `obj$cell_type`:
+
+```r
+coords <- GetTissueCoordinates(obj)
+df <- data.frame(x = coords$x, y = coords$y, label = obj$cell_type[coords$cell])
+```
+
+If an object holds several images, such as more than one bin size, choose one
+with `image`, e.g. `GetTissueCoordinates(obj, image = "slice1.008um")`.
+
+### Neighbors
+
+With the defaults, each sample's spots or cells are linked to:
+
+- Visium spots: their six immediate neighbors.
+- Visium HD bins: their four side neighbors. Set `radius` to 1.5 times the bin
+  size to add the diagonals.
+- Segmented cells (Xenium, or Visium HD with cell segmentation): the cells
+  surrounding them, ignoring links across gaps.
+
+Positions can be the pixel or micrometre coordinates from Space Ranger or
+Xenium outputs, as long as all samples use the same units. As the spacing is
+taken over all samples, don't mix samples in different units, or from
+different technologies.
 
 ### Example
 
@@ -86,23 +119,19 @@ seurat_objects <- lapply(ids, function(id) {
     download.file(paste0(url, "_spatial.tar.gz"), tar <- tempfile())
     untar(tar, exdir = dir)
   }
-  image <- Read10X_Image(file.path(dir, "spatial"), image.type = "VisiumV1")
-  Load10X_Spatial(dir, image = image)
-})
-
-labels <- lapply(seurat_objects, function(cells) {
-  coords <- cells@images[[1]]@coordinates
-  counts <- GetAssayData(cells, layer = "counts")[markers, rownames(coords)]
-  counts <- as.matrix(counts)
-  markers[max.col(t(counts / rowMeans(counts)), ties.method = "first")]
+  cells <- Load10X_Spatial(dir)
+  counts <- as.matrix(GetAssayData(cells, layer = "counts")[markers, ])
+  cells$cell_type <- markers[max.col(t(counts / rowMeans(counts)),
+                                     ties.method = "first")]
+  cells
 })
 
 plot_slices <- function(samples) {
   spots <- do.call(rbind, Map(cbind, sample = names(samples), samples))
-  ggplot(spots, aes(.data$array_col, -.data$array_row, color = .data$label)) +
+  ggplot(spots, aes(.data$x, -.data$y, color = .data$label)) +
     geom_point(size = 1.1, stroke = 0) +
     facet_wrap(~sample, nrow = 1) +
-    coord_fixed(sqrt(3)) +
+    coord_fixed() +
     scale_color_manual(values = c("#CC79A7", "#D55E00", "#0072B2", "#F0E442",
                                   "#009E73")) +
     guides(color = guide_legend(override.aes = list(size = 4))) +
@@ -130,16 +159,17 @@ plot_similarity <- function(sim) {
 
 </details>
 
-Each sample is a data frame of spot array coordinates and labels:
+Each sample is a data frame of spot positions (in full-resolution image
+pixels) and labels:
 
 ```{r samples}
 library(friendlyspots)
 
-samples <- Map(function(cells, label) {
-  coords <- cells@images[[1]]@coordinates
-  data.frame(array_row = coords$row, array_col = coords$col, label = label,
-             row.names = rownames(coords))
-}, seurat_objects, labels)
+samples <- lapply(seurat_objects, function(cells) {
+  coords <- GetTissueCoordinates(cells)
+  data.frame(x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
+             row.names = coords$cell)
+})
 head(samples$anterior_1)
 ```
 

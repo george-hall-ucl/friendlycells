@@ -14,7 +14,7 @@ knitr:
 based on which labels (e.g. cell types) border one another. Available for R
 and Python.
 
-`friendlyspots` is only compatible with original (non-HD) Visium.
+Compatible with Visium, Visium HD (binned or segmented) and Xenium.
 
 ## Installation
 
@@ -25,7 +25,7 @@ and Python.
 remotes::install_github("george-hall-ucl/friendlyspots", subdir = "R")
 ```
 
-Requires only base R.
+Requires `dbscan` and `deldir`.
 
 ## Python
 
@@ -33,13 +33,14 @@ Requires only base R.
 pip install "git+https://github.com/george-hall-ucl/friendlyspots#subdirectory=python"
 ```
 
-Requires `pandas` and `numpy`.
+Requires `pandas`, `numpy` and `scipy`.
 :::
 
 ## Usage
 
-Give `spatial_similarity()` one data frame per sample, with columns for
-`array_row`, `array_col` and `label`:
+Give `spatial_similarity()` one data frame per sample, with columns `x`, `y`
+(positions, e.g. in pixels or micrometres) and `label` (see
+[Extracting positions](reference.qmd#extracting-positions)):
 
 ::: {.panel-tabset group="language"}
 ## R
@@ -62,8 +63,9 @@ sim = spatial_similarity(samples)
 :::
 
 This returns a sample × sample matrix of similarity scores: 1 = identical,
-0 = least similar pair. See the [example](#example) below and the
-[Reference](reference.qmd) for all options.
+0 = least similar pair. See the [example](#example) below, and the
+[Reference](reference.qmd) for all options, including how neighbors are
+found for each technology.
 
 ## Example
 
@@ -103,23 +105,19 @@ seurat_objects <- lapply(ids, function(id) {
     download.file(paste0(url, "_spatial.tar.gz"), tar <- tempfile())
     untar(tar, exdir = dir)
   }
-  image <- Read10X_Image(file.path(dir, "spatial"), image.type = "VisiumV1")
-  Load10X_Spatial(dir, image = image)
-})
-
-labels <- lapply(seurat_objects, function(cells) {
-  coords <- cells@images[[1]]@coordinates
-  counts <- GetAssayData(cells, layer = "counts")[markers, rownames(coords)]
-  counts <- as.matrix(counts)
-  markers[max.col(t(counts / rowMeans(counts)), ties.method = "first")]
+  cells <- Load10X_Spatial(dir)
+  counts <- as.matrix(GetAssayData(cells, layer = "counts")[markers, ])
+  cells$cell_type <- markers[max.col(t(counts / rowMeans(counts)),
+                                     ties.method = "first")]
+  cells
 })
 
 plot_slices <- function(samples) {
   spots <- do.call(rbind, Map(cbind, sample = names(samples), samples))
-  ggplot(spots, aes(.data$array_col, -.data$array_row, color = .data$label)) +
+  ggplot(spots, aes(.data$x, -.data$y, color = .data$label)) +
     geom_point(size = 1.1, stroke = 0) +
     facet_wrap(~sample, nrow = 1) +
-    coord_fixed(sqrt(3)) +
+    coord_fixed() +
     scale_color_manual(values = c("#CC79A7", "#D55E00", "#0072B2", "#F0E442",
                                   "#009E73")) +
     guides(color = guide_legend(override.aes = list(size = 4))) +
@@ -145,17 +143,18 @@ plot_similarity <- function(sim) {
 }
 ```
 
-Each sample is a data frame of spot array coordinates and labels:
+Each sample is a data frame of spot positions (in full-resolution image
+pixels) and labels:
 
 ```{r}
 #| label: r-samples
 library(friendlyspots)
 
-samples <- Map(function(cells, label) {
-  coords <- cells@images[[1]]@coordinates
-  data.frame(array_row = coords$row, array_col = coords$col, label = label,
-             row.names = rownames(coords))
-}, seurat_objects, labels)
+samples <- lapply(seurat_objects, function(cells) {
+  coords <- GetTissueCoordinates(cells)
+  data.frame(x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
+             row.names = coords$cell)
+})
 head(samples$anterior_1)
 ```
 
@@ -193,6 +192,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import squidpy as sq
 
@@ -222,8 +222,8 @@ def plot_slices(samples):
     fig, axes = plt.subplots(1, len(samples), layout="constrained")
     for ax, (name, df) in zip(axes, samples.items()):
         ax.scatter(
-            df["array_col"],
-            -df["array_row"] * np.sqrt(3),
+            df["x"],
+            -df["y"],
             c=df["label"].map(colors),
             s=3,
             linewidths=0,
@@ -263,7 +263,8 @@ def plot_similarity(sim):
     plt.show()
 ```
 
-Each sample is a DataFrame of spot array coordinates and labels:
+Each sample is a DataFrame of spot positions (in full-resolution image
+pixels) and labels:
 
 ```{python}
 #| label: py-samples
@@ -271,7 +272,11 @@ Each sample is a DataFrame of spot array coordinates and labels:
 from friendlyspots import spatial_similarity
 
 samples = {
-    name: adata.obs[["array_row", "array_col"]].assign(label=labels[name])
+    name: pd.DataFrame({
+        "x": adata.obsm["spatial"][:, 0],
+        "y": adata.obsm["spatial"][:, 1],
+        "label": labels[name],
+    }, index=adata.obs_names)
     for name, adata in adatas.items()
 }
 print(samples["anterior_1"].head())
