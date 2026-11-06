@@ -1,5 +1,8 @@
 #' Spatial similarity between spatial transcriptomics samples
 #'
+#' Computes spatial similarity between spatial transcriptomics samples by
+#' counting connections between neighboring spots/cells.
+#'
 #' @param samples Named list of data frames, one per sample, with columns: `x`,
 #'   `y` (positions of spots/cells in any unit, e.g. pixels or micrometres,
 #'   consistent between samples); `label` (e.g. cell type).

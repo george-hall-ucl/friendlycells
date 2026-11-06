@@ -1,12 +1,11 @@
 #' Plot example neighborhoods
 #'
-#' Draws a patch of each sample, highlighting a few spots/cells and their
-#' neighbors, to check that the neighborhood settings give the neighborhoods
-#' intended. Uses the same settings as [spatial_similarity()] would given the
-#' same arguments.
+#' Plot example neighborhoods on your samples. Draws a patch of each sample,
+#' highlighting a few spots/cells and their neighbors, to check that the
+#' neighborhood settings give the neighborhoods intended.
 #'
 #' @inheritParams spatial_similarity
-#' @param samples_to_plot Names of the samples to plot. By default, all
+#' @param samples_to_plot Names of the samples to plot. By default, plot all
 #'   samples.
 #' @param n Number of neighborhoods to highlight in each sample. Colors repeat
 #'   after 7.

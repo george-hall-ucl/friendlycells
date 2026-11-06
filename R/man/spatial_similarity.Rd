@@ -52,7 +52,8 @@ Symmetric similarity matrix with values in [0, 1], or \code{NA} for
 samples with no neighboring spots when \code{normalize = TRUE}.
 }
 \description{
-Spatial similarity between spatial transcriptomics samples
+Computes spatial similarity between spatial transcriptomics samples by
+counting connections between neighboring spots/cells.
 }
 \details{
 Under default settings, the neighbourhoods of each sample's

@@ -18,15 +18,15 @@ def plot_neighborhoods(
     n=7,
     seed=123,
 ):
-    """Plot example neighborhoods.
+    """Plot example neighborhoods on your samples.
 
     Draws a patch of each sample, highlighting a few spots/cells and their
     neighbors, to check that the neighborhood settings give the neighborhoods
-    intended. Uses the same settings as spatial_similarity would given the same
-    arguments. Needs matplotlib (pip install friendlycells[plot]).
+    intended. Needs matplotlib (pip install friendlycells[plot]).
 
     samples, neighborhood, radius, k: as for spatial_similarity.
-    samples_to_plot: names of the samples to plot. By default, all samples.
+    samples_to_plot: names of the samples to plot. By default, plot all
+        samples.
     n: number of neighborhoods to highlight in each sample. Colors repeat after 7.
     seed: random seed, so the same patches and spots/cells are plotted each
         time. None for different ones each time.

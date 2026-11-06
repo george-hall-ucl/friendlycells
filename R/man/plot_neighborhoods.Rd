@@ -19,7 +19,7 @@ plot_neighborhoods(
 \code{y} (positions of spots/cells in any unit, e.g. pixels or micrometres,
 consistent between samples); \code{label} (e.g. cell type).}
 
-\item{samples_to_plot}{Names of the samples to plot. By default, all
+\item{samples_to_plot}{Names of the samples to plot. By default, plot all
 samples.}
 
 \item{neighborhood}{Definition of the neighbourhood of each spot/cell:
@@ -53,10 +53,9 @@ list of row numbers, the highlighted spot/cell first, then its
 neighbors).
 }
 \description{
-Draws a patch of each sample, highlighting a few spots/cells and their
-neighbors, to check that the neighborhood settings give the neighborhoods
-intended. Uses the same settings as \code{\link[=spatial_similarity]{spatial_similarity()}} would given the
-same arguments.
+Plot example neighborhoods on your samples. Draws a patch of each sample,
+highlighting a few spots/cells and their neighbors, to check that the
+neighborhood settings give the neighborhoods intended.
 }
 \examples{
 grid <- expand.grid(x = 1:40, y = 1:40)

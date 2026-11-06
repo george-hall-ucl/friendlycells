@@ -17,7 +17,8 @@ def spatial_similarity(
     radius=None,
     k=6,
 ):
-    """Spatial similarity between spatial transcriptomics samples.
+    """Computes spatial similarity between spatial transcriptomics samples by
+    counting connections between neighboring spots/cells.
 
     samples: dict of DataFrames, one per sample, with columns: x, y (positions
         of spots/cells in any unit, e.g. pixels or micrometres, consistent

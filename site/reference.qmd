@@ -4,7 +4,7 @@ title: "Reference"
 
 ## `spatial_similarity()`
 
-Spatial similarity between spatial transcriptomics samples.
+Computes spatial similarity between spatial transcriptomics samples by counting connections between neighboring spots / cells.
 
 ::: {.panel-tabset group="language"}
 ## R
@@ -147,7 +147,8 @@ Xenium outputs, as long as all samples use the same units. As the spacing is
 taken over all samples, don't mix samples in different units or from different
 technologies.
 
-To check the neighborhoods, use [`plot_neighborhoods()`](#plot_neighborhoods).
+You can use [`plot_neighborhoods()`](#plot_neighborhoods) to check that your
+neighborhood definition includes the spots / cells you expect.
 
 ### Warnings
 
@@ -165,10 +166,10 @@ To check the neighborhoods, use [`plot_neighborhoods()`](#plot_neighborhoods).
 
 ## `plot_neighborhoods()` {#plot_neighborhoods}
 
-Plot example neighborhoods. Draws a patch of each sample, highlighting a few
-spots/cells (each in its own color) and their neighbors (in a lighter shade),
-to check that the neighborhood settings give the neighborhoods intended. Uses
-the same settings as `spatial_similarity()` would given the same arguments.
+Plot example neighborhoods on your samples. Draws a patch of each sample,
+highlighting a few spots/cells (each in its own color) and their neighbors (in
+a lighter shade), to check that the neighborhood settings give the
+neighborhoods intended.
 
 ::: {.panel-tabset group="language"}
 ## R
@@ -195,7 +196,7 @@ plot_neighborhoods(samples, samples_to_plot=None, neighborhood="auto",
 : As for `spatial_similarity()`.
 
 `samples_to_plot`
-: Names of the samples to plot. By default, all samples.
+: Names of the samples to plot. By default, plot all samples.
 
 `n`
 : Number of neighborhoods to highlight in each sample. Colors repeat after 7.

@@ -225,8 +225,8 @@ plot_similarity(sim)
 
 ## Citation
 
-The algorithm and original implementation of `friendlycells` are based on the
-methodology in:
+The original algorithm and implementation of `friendlycells` were first
+published in:
 
 - Durkin _et al_. "Functional integration of an autologous engineered esophagus
   in a large-animal model." _Nature Biotechnology_ (2026).
