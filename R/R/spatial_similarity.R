@@ -66,29 +66,9 @@ spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
                                  "delaunay"
                                ),
                                radius = NULL, k = 6) {
-  neighborhood <- match.arg(neighborhood)
-  if (!all(vapply(
-    samples, function(s) all(c("x", "y", "label") %in% names(s)),
-    logical(1)
-  ))) {
-    stop(
-      "Each sample needs columns x, y (positions, e.g. in micrometres) ",
-      "and label."
-    )
-  }
-  if (neighborhood == "auto" || (is.null(radius) && neighborhood != "knn")) {
-    nn <- nn_distances(samples)
-  }
-  if (neighborhood == "auto") {
-    neighborhood <- if (on_grid(nn)) "radius" else "delaunay"
-    message(
-      "Using neighborhood = \"", neighborhood, "\", as the positions ",
-      if (neighborhood == "radius") "lie" else "don't lie", " on a grid."
-    )
-  }
-  if (is.null(radius) && neighborhood != "knn") {
-    radius <- default_radius(nn, neighborhood)
-  }
+  settings <- neighborhood_settings(samples, match.arg(neighborhood), radius)
+  neighborhood <- settings$neighborhood
+  radius <- settings$radius
   if (anyNA(unlist(lapply(samples, function(s) as.character(s$label))))) {
     # e.g. read.csv() reads a label literally called "NA" as missing
     warning(
@@ -132,6 +112,34 @@ spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
   d_max <- max(0, d, na.rm = TRUE)
   if (d_max > 0) d <- d / d_max
   1 - d
+}
+
+# Checks the samples, then resolves "auto" and the default radius from all
+# samples
+neighborhood_settings <- function(samples, neighborhood, radius) {
+  if (!all(vapply(
+    samples, function(s) all(c("x", "y", "label") %in% names(s)),
+    logical(1)
+  ))) {
+    stop(
+      "Each sample needs columns x, y (positions, e.g. in micrometres) ",
+      "and label."
+    )
+  }
+  if (neighborhood == "auto" || (is.null(radius) && neighborhood != "knn")) {
+    nn <- nn_distances(samples)
+  }
+  if (neighborhood == "auto") {
+    neighborhood <- if (on_grid(nn)) "radius" else "delaunay"
+    message(
+      "Using neighborhood = \"", neighborhood, "\", as the positions ",
+      if (neighborhood == "radius") "lie" else "don't lie", " on a grid."
+    )
+  }
+  if (is.null(radius) && neighborhood != "knn") {
+    radius <- default_radius(nn, neighborhood)
+  }
+  list(neighborhood = neighborhood, radius = radius)
 }
 
 # Distance from each spot or cell to its nearest neighbor, over all samples

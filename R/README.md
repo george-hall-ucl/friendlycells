@@ -83,6 +83,12 @@ Xenium outputs, as long as all samples use the same units. As the spacing is
 taken over all samples, don't mix samples in different units, or from
 different technologies.
 
+To check them, `plot_neighborhoods(samples)` draws a patch of each sample with
+seven spots or cells highlighted, each in its own color, and their neighbors in a
+lighter shade. It uses the same settings as `spatial_similarity()`, so pass it
+the same `neighborhood`, `radius` and `k`. Choose samples with
+`samples_to_plot`, and change `seed` to draw different spots.
+
 ### Example
 
 Uses four mouse brain sections from 10x Genomics (two anterior, two posterior),
@@ -99,27 +105,34 @@ library(Seurat)
 library(ggplot2)
 
 markers <- c("Mbp", "Slc17a7", "Penk", "Hpca", "Gabra6")
-ids <- c(anterior_1 = "V1_Mouse_Brain_Sagittal_Anterior",
-         anterior_2 = "V1_Mouse_Brain_Sagittal_Anterior_Section_2",
-         posterior_1 = "V1_Mouse_Brain_Sagittal_Posterior",
-         posterior_2 = "V1_Mouse_Brain_Sagittal_Posterior_Section_2")
+ids <- c(
+  anterior_1 = "V1_Mouse_Brain_Sagittal_Anterior",
+  anterior_2 = "V1_Mouse_Brain_Sagittal_Anterior_Section_2",
+  posterior_1 = "V1_Mouse_Brain_Sagittal_Posterior",
+  posterior_2 = "V1_Mouse_Brain_Sagittal_Posterior_Section_2"
+)
 cache <- tools::R_user_dir("friendlycells", "cache")
 
 seurat_objects <- lapply(ids, function(id) {
   dir <- file.path(cache, id)
   if (!dir.exists(file.path(dir, "spatial"))) {
-    url <- paste0("https://cf.10xgenomics.com/samples/spatial-exp/1.1.0/",
-                  id, "/", id)
+    url <- paste0(
+      "https://cf.10xgenomics.com/samples/spatial-exp/1.1.0/",
+      id, "/", id
+    )
     dir.create(dir, recursive = TRUE, showWarnings = FALSE)
-    download.file(paste0(url, "_filtered_feature_bc_matrix.h5"),
-                  file.path(dir, "filtered_feature_bc_matrix.h5"))
+    download.file(
+      paste0(url, "_filtered_feature_bc_matrix.h5"),
+      file.path(dir, "filtered_feature_bc_matrix.h5")
+    )
     download.file(paste0(url, "_spatial.tar.gz"), tar <- tempfile())
     untar(tar, exdir = dir)
   }
   cells <- Load10X_Spatial(dir)
   counts <- as.matrix(GetAssayData(cells, layer = "counts")[markers, ])
   cells$cell_type <- markers[max.col(t(counts / rowMeans(counts)),
-                                     ties.method = "first")]
+    ties.method = "first"
+  )]
   cells
 })
 
@@ -129,8 +142,10 @@ plot_slices <- function(samples) {
     geom_point(size = 1.1, stroke = 0) +
     facet_wrap(~sample, nrow = 1) +
     coord_fixed() +
-    scale_color_manual(values = c("#CC79A7", "#D55E00", "#0072B2", "#F0E442",
-                                  "#009E73")) +
+    scale_color_manual(values = c(
+      "#CC79A7", "#D55E00", "#0072B2", "#F0E442",
+      "#009E73"
+    )) +
     guides(color = guide_legend(override.aes = list(size = 4))) +
     theme_void(base_size = 14) +
     theme(legend.position = "bottom", legend.title = element_blank())
@@ -141,16 +156,22 @@ plot_similarity <- function(sim) {
   lower <- df[as.integer(df$Var1) >= as.integer(df$Var2), ]
   ggplot(lower, aes(.data$Var1, .data$Var2, fill = .data$Freq)) +
     geom_tile() +
-    geom_text(aes(label = sprintf("%.2f", .data$Freq),
-                  color = .data$Freq < 0.1),
-              size = 5, fontface = "bold", show.legend = FALSE) +
+    geom_text(
+      aes(
+        label = sprintf("%.2f", .data$Freq),
+        color = .data$Freq < 0.1
+      ),
+      size = 5, fontface = "bold", show.legend = FALSE
+    ) +
     scale_color_manual(values = c("black", "white")) +
     scale_fill_viridis_c(option = "inferno", name = "Similarity") +
     coord_fixed() +
     theme_minimal(base_size = 14) +
-    theme(axis.title = element_blank(),
-          axis.text.x = element_text(angle = 45, hjust = 1),
-          text = element_text(face = "bold"))
+    theme(
+      axis.title = element_blank(),
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      text = element_text(face = "bold")
+    )
 }
 ```
 
@@ -165,8 +186,10 @@ library(friendlycells)
 
 samples <- lapply(seurat_objects, function(cells) {
   coords <- GetTissueCoordinates(cells)
-  data.frame(x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
-             row.names = coords$cell)
+  data.frame(
+    x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
+    row.names = coords$cell
+  )
 })
 head(samples$anterior_1)
 #>                       x    y   label

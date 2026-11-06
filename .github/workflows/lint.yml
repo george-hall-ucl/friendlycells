@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: "3.12"
       # Pinned so a new release's style changes don't fail unrelated PRs
-      - run: pip install black==26.10.1 pylint==4.1.3 . pytest
+      - run: pip install black==26.10.1 pylint==4.1.3 ".[plot]" pytest
       - run: black --check friendlycells tests
       - run: pylint friendlycells tests
 

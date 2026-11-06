@@ -14,7 +14,8 @@ knitr:
 based on which labels (e.g. cell types) border one another. Available for R
 and Python.
 
-Compatible with Visium, Visium HD (binned or segmented) and Xenium.
+Compatible with Visium, Visium HD (binned or segmented) and Xenium. See
+[Neighborhoods](neighborhoods.qmd) for how spots and cells are linked on each.
 
 ## Installation
 

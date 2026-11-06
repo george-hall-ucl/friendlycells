@@ -72,12 +72,18 @@ different technologies.
 }
 \examples{
 samples <- list(
-  a = data.frame(x = c(0, 100, 50), y = c(0, 0, 86.6),
-                 label = c("x", "y", "x")),
-  b = data.frame(x = c(0, 100, 200), y = c(0, 0, 0),
-                 label = c("x", "x", "y")),
-  c = data.frame(x = c(0, 100), y = c(0, 0),
-                 label = c("y", "y"))
+  a = data.frame(
+    x = c(0, 100, 50), y = c(0, 0, 86.6),
+    label = c("x", "y", "x")
+  ),
+  b = data.frame(
+    x = c(0, 100, 200), y = c(0, 0, 0),
+    label = c("x", "x", "y")
+  ),
+  c = data.frame(
+    x = c(0, 100), y = c(0, 0),
+    label = c("y", "y")
+  )
 )
 spatial_similarity(samples)
 spatial_similarity(samples, pools = list(ab = c("a", "b"), c = "c"))

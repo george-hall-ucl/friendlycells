@@ -210,3 +210,25 @@ test_that("with the default radius, results don't depend on units", {
   pixels <- lapply(samples, function(s) transform(s, x = x / 0.3, y = y / 0.3))
   expect_equal(spatial_similarity(pixels), spatial_similarity(samples))
 })
+
+test_that("example neighborhoods don't touch and match the full sample's", {
+  set.seed(1)
+  xy <- cbind(runif(3000, 0, 100), runif(3000, 0, 100))
+  hoods <- example_neighborhoods(xy, "delaunay", radius = 6, k = 6, n = 10)
+  expect_length(hoods$neighborhoods, 10)
+  expect_false(anyDuplicated(unlist(hoods$neighborhoods)) > 0)
+  pairs <- neighbor_pairs(xy, "delaunay", radius = 6)
+  hood_of <- integer(nrow(xy))
+  hood_of[unlist(hoods$neighborhoods)] <- rep(
+    seq_along(hoods$neighborhoods), lengths(hoods$neighborhoods)
+  )
+  linked <- hood_of[pairs[, 1]] > 0 & hood_of[pairs[, 2]] > 0
+  expect_equal(hood_of[pairs[linked, 1]], hood_of[pairs[linked, 2]])
+  for (hood in hoods$neighborhoods) {
+    expect_setequal(hood[-1], pairs[pairs[, 1] == hood[1], 2])
+  }
+})
+
+test_that("unknown samples_to_plot give an error", {
+  expect_error(plot_neighborhoods(samples, samples_to_plot = "D"), "Unknown")
+})

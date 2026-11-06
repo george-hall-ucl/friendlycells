@@ -101,6 +101,13 @@ Xenium outputs, as long as all samples use the same units. As the spacing is
 taken over all samples, don't mix samples in different units, or from
 different technologies.
 
+To check them, `plot_neighborhoods(samples)` draws a patch of each sample with
+seven spots or cells highlighted, each in its own color, and their neighbors in a
+lighter shade. It uses the same settings as `spatial_similarity()`, so pass it
+the same `neighborhood`, `radius` and `k`. Choose samples with
+`samples_to_plot`, and change `seed` to draw different spots.
+It needs matplotlib.
+
 ### Example
 
 Uses four mouse brain sections from 10x Genomics (two anterior, two posterior),
