@@ -23,6 +23,8 @@ BugReports: https://github.com/george-hall-ucl/friendlycells/issues
 Imports:
     dbscan,
     deldir,
+    graphics,
+    grDevices,
     stats
 Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -62,10 +62,13 @@ sim = spatial_similarity(samples)
 ```
 :::
 
-This returns a sample × sample matrix of similarity scores: 1 = identical,
-0 = least similar pair. See the [example](#example) below, and the
+This returns a sample × sample matrix of similarity scores: 1 = identical, 0 =
+least similar pair. See the [example](#example) below, and the
 [Reference](reference.qmd) for all options, including how neighbors are
-found for each technology.
+computed. Different definitions of neighborhoods will lead to different
+results, and, unless told otherwise, `friendlycells` uses (hopefully) sensible
+defaults. For more information on different definitions of neighbourhood, see
+[here](neighborhoods.qmd).
 
 ## Example
 
@@ -309,8 +312,8 @@ sections, while anterior and posterior sections are dissimilar.
 
 ## Citation
 
-The algorithm and original implementation of `friendlycells` are based on the
-methodology in:
+The original algorithm and implementation of `friendlycells` were first
+published in:
 
 - Durkin _et al_. "Functional integration of an autologous engineered esophagus
   in a large-animal model." _Nature Biotechnology_ (2026).

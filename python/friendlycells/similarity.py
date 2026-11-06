@@ -17,7 +17,8 @@ def spatial_similarity(
     radius=None,
     k=6,
 ):
-    """Spatial similarity between spatial transcriptomics samples.
+    """Computes spatial similarity between spatial transcriptomics samples by
+    counting connections between neighboring spots/cells.
 
     samples: dict of DataFrames, one per sample, with columns: x, y (positions
         of spots/cells in any unit, e.g. pixels or micrometres, consistent
@@ -60,24 +61,7 @@ def spatial_similarity(
     is taken over all samples, don't mix samples in different units or from
     different technologies.
     """
-    if neighborhood not in ("auto", "radius", "knn", "delaunay"):
-        raise ValueError("neighborhood must be 'auto', 'radius', 'knn' or 'delaunay'.")
-    if not all({"x", "y", "label"} <= set(s.columns) for s in samples.values()):
-        raise ValueError(
-            "Each sample needs columns x, y (positions, e.g. in micrometres) and label."
-        )
-    if neighborhood == "auto" or (radius is None and neighborhood != "knn"):
-        nn = _nn_distances(samples)
-    if neighborhood == "auto":
-        # pylint: disable-next=possibly-used-before-assignment
-        neighborhood = "radius" if _on_grid(nn) else "delaunay"
-        lie = "lie" if neighborhood == "radius" else "don't lie"
-        print(
-            f'Using neighborhood="{neighborhood}", as the positions {lie} on a grid.',
-            file=sys.stderr,
-        )
-    if radius is None and neighborhood != "knn":
-        radius = _default_radius(nn, neighborhood)
+    neighborhood, radius = _neighborhood_settings(samples, neighborhood, radius)
     if any(s["label"].isna().any() for s in samples.values()):
         # e.g. pd.read_csv() reads a label literally called "NA" as missing
         warnings.warn(
@@ -124,6 +108,29 @@ def spatial_similarity(
     if d_max > 0:
         d = d / d_max
     return pd.DataFrame(1 - d, index=counts.index, columns=counts.index)
+
+
+def _neighborhood_settings(samples, neighborhood, radius):
+    """Checks the samples, then resolves "auto" and the default radius from all samples."""
+    if neighborhood not in ("auto", "radius", "knn", "delaunay"):
+        raise ValueError("neighborhood must be 'auto', 'radius', 'knn' or 'delaunay'.")
+    if not all({"x", "y", "label"} <= set(s.columns) for s in samples.values()):
+        raise ValueError(
+            "Each sample needs columns x, y (positions, e.g. in micrometres) and label."
+        )
+    if neighborhood == "auto" or (radius is None and neighborhood != "knn"):
+        nn = _nn_distances(samples)
+    if neighborhood == "auto":
+        # pylint: disable-next=possibly-used-before-assignment
+        neighborhood = "radius" if _on_grid(nn) else "delaunay"
+        lie = "lie" if neighborhood == "radius" else "don't lie"
+        print(
+            f'Using neighborhood="{neighborhood}", as the positions {lie} on a grid.',
+            file=sys.stderr,
+        )
+    if radius is None and neighborhood != "knn":
+        radius = _default_radius(nn, neighborhood)
+    return neighborhood, radius
 
 
 def _nn_distances(samples):

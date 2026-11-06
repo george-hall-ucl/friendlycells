@@ -91,6 +91,13 @@ Xenium outputs, as long as all samples use the same units. As the spacing is
 taken over all samples, don't mix samples in different units, or from
 different technologies.
 
+To check them, `plot_neighborhoods(samples)` draws a patch of each sample with
+seven spots or cells highlighted, each in its own color, and their neighbors in a
+lighter shade. It uses the same settings as `spatial_similarity()`, so pass it
+the same `neighborhood`, `radius` and `k`. Choose samples with
+`samples_to_plot`, and change `seed` to draw different spots.
+It needs matplotlib.
+
 ### Example
 
 Uses four mouse brain sections from 10x Genomics (two anterior, two posterior),
@@ -229,8 +236,8 @@ plot_similarity(sim)
 
 ## Citation
 
-The algorithm and original implementation of `friendlycells` are based on the
-methodology in:
+The original algorithm and implementation of `friendlycells` were first
+published in:
 
 - Durkin _et al_. "Functional integration of an autologous engineered esophagus
   in a large-animal model." _Nature Biotechnology_ (2026).

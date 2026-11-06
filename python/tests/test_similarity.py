@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from friendlycells import spatial_similarity
+from friendlycells import plot_neighborhoods, spatial_similarity
+from friendlycells.plotting import _example_neighborhoods
 from friendlycells.similarity import _default_radius, _neighbor_pairs, _nn_distances
 
 
@@ -241,3 +242,27 @@ def test_default_radius_units():
     pd.testing.assert_frame_equal(
         spatial_similarity(pixels), spatial_similarity(SAMPLES)
     )
+
+
+def test_example_neighborhoods():
+    """Example neighborhoods don't touch and match the full sample's."""
+    rng = np.random.default_rng(1)
+    xy = rng.uniform(0, 100, (3000, 2))
+    _, hoods = _example_neighborhoods(xy, "delaunay", 6, 6, 10, rng)
+    assert len(hoods) == 10
+    flat = np.concatenate(hoods)
+    assert len(np.unique(flat)) == len(flat)
+    pairs = _neighbor_pairs(xy, "delaunay", radius=6)
+    hood_of = np.zeros(len(xy), dtype=int)
+    for i, hood in enumerate(hoods, start=1):
+        hood_of[hood] = i
+    linked = pairs[(hood_of[pairs[:, 0]] > 0) & (hood_of[pairs[:, 1]] > 0)]
+    assert (hood_of[linked[:, 0]] == hood_of[linked[:, 1]]).all()
+    for hood in hoods:
+        assert set(hood[1:]) == set(pairs[pairs[:, 0] == hood[0], 1])
+
+
+def test_unknown_samples_to_plot():
+    """Unknown samples_to_plot give an error."""
+    with pytest.raises(ValueError, match="Unknown"):
+        plot_neighborhoods(SAMPLES, samples_to_plot=["D"])

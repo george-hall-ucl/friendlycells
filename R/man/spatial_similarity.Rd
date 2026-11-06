@@ -52,7 +52,8 @@ Symmetric similarity matrix with values in [0, 1], or \code{NA} for
 samples with no neighboring spots when \code{normalize = TRUE}.
 }
 \description{
-Spatial similarity between spatial transcriptomics samples
+Computes spatial similarity between spatial transcriptomics samples by
+counting connections between neighboring spots/cells.
 }
 \details{
 Under default settings, the neighbourhoods of each sample's
@@ -72,12 +73,18 @@ different technologies.
 }
 \examples{
 samples <- list(
-  a = data.frame(x = c(0, 100, 50), y = c(0, 0, 86.6),
-                 label = c("x", "y", "x")),
-  b = data.frame(x = c(0, 100, 200), y = c(0, 0, 0),
-                 label = c("x", "x", "y")),
-  c = data.frame(x = c(0, 100), y = c(0, 0),
-                 label = c("y", "y"))
+  a = data.frame(
+    x = c(0, 100, 50), y = c(0, 0, 86.6),
+    label = c("x", "y", "x")
+  ),
+  b = data.frame(
+    x = c(0, 100, 200), y = c(0, 0, 0),
+    label = c("x", "x", "y")
+  ),
+  c = data.frame(
+    x = c(0, 100), y = c(0, 0),
+    label = c("y", "y")
+  )
 )
 spatial_similarity(samples)
 spatial_similarity(samples, pools = list(ab = c("a", "b"), c = "c"))
