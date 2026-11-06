@@ -16,3 +16,31 @@
 :root[data-lang="r"] .lang-py,
 :root[data-lang="py"] .lang-r { display: none; }
 :root:not([data-lang]) .lang-r + .lang-py::before { content: " / "; }
+
+/* Usage selector, chosen by selector.js; without it, every snippet shows */
+.selector {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.selector-label { font-weight: bold; }
+.selector-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.selector-options .btn { flex: 1 1 0; white-space: nowrap; }
+@media (max-width: 576px) {
+  .selector { grid-template-columns: 1fr; }
+}
+:root[data-tech]:not([data-tech="visium"]) .tech-visium,
+:root[data-tech]:not([data-tech="hd-bins"]) .tech-hd-bins,
+:root[data-tech]:not([data-tech="hd-cells"]) .tech-hd-cells,
+:root[data-tech]:not([data-tech="xenium"]) .tech-xenium { display: none; }
+
+/* Links on inline code, such as to the Reference, look like plain inline code */
+#quarto-document-content a:has(> code) { text-decoration: none; }
+#quarto-document-content a:has(> code):hover { text-decoration: underline; }
+#quarto-document-content a > code { color: var(--bs-code-color); }

@@ -7,6 +7,8 @@ project:
   resources:
     - spots.js
     - lang.js
+    - selector.js
+    - code-links.js
 
 execute:
   freeze: auto
@@ -17,17 +19,22 @@ website:
   repo-url: https://github.com/george-hall-ucl/friendlycells
   favicon: images/logo.png
   navbar:
+    pinned: true
     logo: images/logo.png
     left:
       - href: index.qmd
         text: Home
-      - reference.qmd
+      - vignette.qmd
       - neighborhoods.qmd
+      - reference.qmd
     right:
       - icon: github
         href: https://github.com/george-hall-ucl/friendlycells
   page-footer:
     center: "Copyright (C) 2026 University College London. Licensed under GPL-3.0-or-later."
+
+filters:
+  - link-functions.lua
 
 format:
   html:
@@ -40,3 +47,5 @@ format:
       text: |
         <script src="spots.js"></script>
         <script src="lang.js"></script>
+        <script src="selector.js"></script>
+        <script src="code-links.js"></script>
