@@ -11,10 +11,10 @@ knitr:
 </p>
 
 `friendlycells` computes similarity between spatial transcriptomics samples
-based on which labels (e.g. cell types) border one another. Available for R
-and Python.
+based on which labels (e.g. cell types) border one another.
 
-Compatible with Visium, Visium HD (binned or segmented) and Xenium.
+It is available for R and Python and is compatible with Visium, Visium HD
+(binned or segmented) and Xenium.
 
 ## Installation
 
@@ -36,279 +36,235 @@ pip install "git+https://github.com/george-hall-ucl/friendlycells#subdirectory=p
 Requires `pandas`, `numpy` and `scipy`.
 :::
 
-## Usage
+## Quick start
 
-Give `spatial_similarity()` one data frame per sample, with columns `x`, `y`
-(positions, e.g. in pixels or micrometres) and `label` (see
-[Extracting positions](reference.qmd#extracting-positions)):
+The main function is `spatial_similarity()`, which receives a [named
+list]{.lang-r}[dict]{.lang-py} of [data frames]{.lang-r}[DataFrames]{.lang-py},
+one for each sample in the comparison.
 
-::: {.panel-tabset group="language"}
-## R
+Each sample's [data frame]{.lang-r}[DataFrame]{.lang-py} comprises three
+columns:
 
-```r
-library(friendlycells)
+* `x` (horizontal coordinates, e.g. in pixels or micrometres)
+* `y` (vertical coordinates, e.g. in pixels or micrometres)
+* `label` (what you want to test for connections between, e.g. cell types).
 
-samples <- list(sample_1 = df1, sample_2 = df2, sample_3 = df3)
-sim <- spatial_similarity(samples)
+Select your language and technology to see how to make this
+[list]{.lang-r}[dict]{.lang-py} and run `spatial_similarity()`.
+
+```{=html}
+<div class="selector">
+  <div class="selector-label">Language</div>
+  <div class="selector-options" data-choice="lang" role="group" aria-label="Language">
+    <button type="button" class="btn btn-outline-primary" data-value="r">R</button>
+    <button type="button" class="btn btn-outline-primary" data-value="py">Python</button>
+  </div>
+  <div class="selector-label">Data</div>
+  <div class="selector-options" data-choice="tech" role="group" aria-label="Data">
+    <button type="button" class="btn btn-outline-primary" data-value="visium">Visium</button>
+    <button type="button" class="btn btn-outline-primary" data-value="hd-bins">Visium HD (bins)</button>
+    <button type="button" class="btn btn-outline-primary" data-value="hd-cells">Visium HD (cells)</button>
+    <button type="button" class="btn btn-outline-primary" data-value="xenium">Xenium</button>
+  </div>
+</div>
 ```
 
-## Python
+::: {.snippet .lang-r .tech-visium}
+```r
+library(Seurat)
+library(friendlycells)
 
+# Assume you have two Visium samples, `healthy` and `diseased`, loaded using
+# Seurat and you want to compare them using the annotated `cell_type` metadata.
+
+samples <- list()
+samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
+                                   y = GetTissueCoordinates(healthy)$y,
+                                   label = healthy$cell_type)
+samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
+                                    y = GetTissueCoordinates(diseased)$y,
+                                    label = diseased$cell_type)
+sim <- spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-py .tech-visium}
 ```python
+import pandas as pd
+
 from friendlycells import spatial_similarity
 
-samples = {"sample_1": df1, "sample_2": df2, "sample_3": df3}
+# Assume you have two Visium samples, `healthy` and `diseased`, loaded as
+# AnnData objects (e.g. using squidpy's `sq.read.visium()`), and you want to
+# compare them using the annotated `cell_type` column of `.obs`.
+
+samples = {}
+samples["healthy"] = pd.DataFrame({
+    "x": healthy.obsm["spatial"][:, 0],
+    "y": healthy.obsm["spatial"][:, 1],
+    "label": healthy.obs["cell_type"],
+})
+samples["diseased"] = pd.DataFrame({
+    "x": diseased.obsm["spatial"][:, 0],
+    "y": diseased.obsm["spatial"][:, 1],
+    "label": diseased.obs["cell_type"],
+})
+sim = spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-r .tech-hd-bins}
+```r
+library(Seurat)
+library(friendlycells)
+
+# Assume you have two Visium HD samples, `healthy` and `diseased`, loaded using
+# Seurat at a single bin size (e.g. `Load10X_Spatial(dir, bin.size = 8)`), and
+# you want to compare them using the annotated `cell_type` metadata.
+
+samples <- list()
+samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
+                                   y = GetTissueCoordinates(healthy)$y,
+                                   label = healthy$cell_type)
+samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
+                                    y = GetTissueCoordinates(diseased)$y,
+                                    label = diseased$cell_type)
+sim <- spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-py .tech-hd-bins}
+```python
+import pandas as pd
+
+from friendlycells import spatial_similarity
+
+# Assume you have two Visium HD samples, `healthy` and `diseased`, loaded as
+# AnnData tables of a single bin size (e.g. `sdata.tables["square_008um"]`,
+# using spatialdata-io's `visium_hd()`), and you want to compare them using
+# the annotated `cell_type` column of `.obs`.
+
+samples = {}
+samples["healthy"] = pd.DataFrame({
+    "x": healthy.obsm["spatial"][:, 0],
+    "y": healthy.obsm["spatial"][:, 1],
+    "label": healthy.obs["cell_type"],
+})
+samples["diseased"] = pd.DataFrame({
+    "x": diseased.obsm["spatial"][:, 0],
+    "y": diseased.obsm["spatial"][:, 1],
+    "label": diseased.obs["cell_type"],
+})
+sim = spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-r .tech-hd-cells}
+```r
+library(Seurat)
+library(friendlycells)
+
+# Assume you have two Visium HD samples, `healthy` and `diseased`, loaded using
+# Seurat with segmented cells (`Load10X_Spatial(dir, bin.size = "polygons")`),
+# and you want to compare them using the annotated `cell_type` metadata.
+
+samples <- list()
+samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
+                                   y = GetTissueCoordinates(healthy)$y,
+                                   label = healthy$cell_type)
+samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
+                                    y = GetTissueCoordinates(diseased)$y,
+                                    label = diseased$cell_type)
+sim <- spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-py .tech-hd-cells}
+```python
+import pandas as pd
+
+from friendlycells import spatial_similarity
+
+# Assume you have two Visium HD samples, `healthy` and `diseased`, loaded as
+# SpatialData objects using spatialdata-io's `visium_hd()`, and you want to
+# compare them using the annotated `cell_type` column of the cell segmentation
+# table. Each cell's position is the centroid of its outline.
+
+samples = {}
+table = healthy.tables["cell_segmentations"]
+cells = healthy.shapes[table.obs["region"].iloc[0]].centroid.loc[table.obs_names]
+samples["healthy"] = pd.DataFrame({
+    "x": cells.x,
+    "y": cells.y,
+    "label": table.obs["cell_type"],
+})
+table = diseased.tables["cell_segmentations"]
+cells = diseased.shapes[table.obs["region"].iloc[0]].centroid.loc[table.obs_names]
+samples["diseased"] = pd.DataFrame({
+    "x": cells.x,
+    "y": cells.y,
+    "label": table.obs["cell_type"],
+})
+sim = spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-r .tech-xenium}
+```r
+library(Seurat)
+library(friendlycells)
+
+# Assume you have two Xenium samples, `healthy` and `diseased`, loaded using
+# Seurat (`LoadXenium()`), and you want to compare them using the annotated
+# `cell_type` metadata.
+
+samples <- list()
+samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
+                                   y = GetTissueCoordinates(healthy)$y,
+                                   label = healthy$cell_type)
+samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
+                                    y = GetTissueCoordinates(diseased)$y,
+                                    label = diseased$cell_type)
+sim <- spatial_similarity(samples)
+```
+:::
+
+::: {.snippet .lang-py .tech-xenium}
+```python
+import pandas as pd
+
+from friendlycells import spatial_similarity
+
+# Assume you have two Xenium samples, `healthy` and `diseased`, loaded as
+# AnnData tables (e.g. `sdata.tables["table"]`, using spatialdata-io's
+# `xenium()`), and you want to compare them using the annotated `cell_type`
+# column of `.obs`.
+
+samples = {}
+samples["healthy"] = pd.DataFrame({
+    "x": healthy.obsm["spatial"][:, 0],
+    "y": healthy.obsm["spatial"][:, 1],
+    "label": healthy.obs["cell_type"],
+})
+samples["diseased"] = pd.DataFrame({
+    "x": diseased.obsm["spatial"][:, 0],
+    "y": diseased.obsm["spatial"][:, 1],
+    "label": diseased.obs["cell_type"],
+})
 sim = spatial_similarity(samples)
 ```
 :::
 
 This returns a sample × sample matrix of similarity scores: 1 = identical, 0 =
-least similar pair. See the [example](#example) below, and the
-[Reference](reference.qmd) for all options, including how neighbors are
-computed. Different definitions of neighborhoods will lead to different
-results, and, unless told otherwise, `friendlycells` uses (hopefully) sensible
-defaults. For more information on different definitions of neighbourhood, see
-[here](neighborhoods.qmd).
+least similar pair. See the [vignette](vignette.qmd) for a worked example, and
+[Reference](reference.qmd) for full documentation of all options.
 
-## Example
-
-This example uses four mouse brain sections from 10x Genomics (two anterior,
-two posterior), with each spot labelled by its most enriched of five marker
-genes.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-setup
-#| code-fold: true
-#| code-summary: "Setup: download and label the data, define plotting helpers"
-#| message: false
-#| warning: false
-#| results: hide
-# Requires Seurat, hdf5r and ggplot2.
-library(Seurat)
-library(ggplot2)
-
-markers <- c("Mbp", "Slc17a7", "Penk", "Hpca", "Gabra6")
-ids <- c(anterior_1 = "V1_Mouse_Brain_Sagittal_Anterior",
-         anterior_2 = "V1_Mouse_Brain_Sagittal_Anterior_Section_2",
-         posterior_1 = "V1_Mouse_Brain_Sagittal_Posterior",
-         posterior_2 = "V1_Mouse_Brain_Sagittal_Posterior_Section_2")
-cache <- tools::R_user_dir("friendlycells", "cache")
-
-seurat_objects <- lapply(ids, function(id) {
-  dir <- file.path(cache, id)
-  if (!dir.exists(file.path(dir, "spatial"))) {
-    url <- paste0("https://cf.10xgenomics.com/samples/spatial-exp/1.1.0/",
-                  id, "/", id)
-    dir.create(dir, recursive = TRUE, showWarnings = FALSE)
-    download.file(paste0(url, "_filtered_feature_bc_matrix.h5"),
-                  file.path(dir, "filtered_feature_bc_matrix.h5"))
-    download.file(paste0(url, "_spatial.tar.gz"), tar <- tempfile())
-    untar(tar, exdir = dir)
-  }
-  cells <- Load10X_Spatial(dir)
-  counts <- as.matrix(GetAssayData(cells, layer = "counts")[markers, ])
-  cells$cell_type <- markers[max.col(t(counts / rowMeans(counts)),
-                                     ties.method = "first")]
-  cells
-})
-
-plot_slices <- function(samples) {
-  spots <- do.call(rbind, Map(cbind, sample = names(samples), samples))
-  ggplot(spots, aes(.data$x, -.data$y, color = .data$label)) +
-    geom_point(size = 1.1, stroke = 0) +
-    facet_wrap(~sample, nrow = 1) +
-    coord_fixed() +
-    scale_color_manual(values = c("#CC79A7", "#D55E00", "#0072B2", "#F0E442",
-                                  "#009E73")) +
-    guides(color = guide_legend(override.aes = list(size = 4))) +
-    theme_void(base_size = 14) +
-    theme(legend.position = "bottom", legend.title = element_blank())
-}
-
-plot_similarity <- function(sim) {
-  df <- as.data.frame(as.table(sim))
-  lower <- df[as.integer(df$Var1) >= as.integer(df$Var2), ]
-  ggplot(lower, aes(.data$Var1, .data$Var2, fill = .data$Freq)) +
-    geom_tile() +
-    geom_text(aes(label = sprintf("%.2f", .data$Freq),
-                  color = .data$Freq < 0.1),
-              size = 5, fontface = "bold", show.legend = FALSE) +
-    scale_color_manual(values = c("black", "white")) +
-    scale_fill_viridis_c(option = "inferno", name = "Similarity") +
-    coord_fixed() +
-    theme_minimal(base_size = 14) +
-    theme(axis.title = element_blank(),
-          axis.text.x = element_text(angle = 45, hjust = 1),
-          text = element_text(face = "bold"))
-}
-```
-
-Each sample is a data frame of spot positions (in full-resolution image
-pixels) and labels:
-
-```{r}
-#| label: r-samples
-library(friendlycells)
-
-samples <- lapply(seurat_objects, function(cells) {
-  coords <- GetTissueCoordinates(cells)
-  data.frame(x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
-             row.names = coords$cell)
-})
-head(samples$anterior_1)
-```
-
-```{r}
-#| label: r-slices
-#| fig-dpi: 300
-#| fig-retina: 1
-#| fig-width: 10
-#| fig-height: 3.5
-plot_slices(samples)
-```
-
-```{r}
-#| label: r-similarity
-#| fig-width: 6
-#| fig-height: 5
-#| out-width: 60%
-sim <- spatial_similarity(samples)
-round(sim, 2)
-plot_similarity(sim)
-```
-
-## Python
-
-```{python}
-#| label: py-setup
-#| jupyter_compat: true
-#| code-fold: true
-#| code-summary: "Setup: download and label the data, define plotting helpers"
-#| message: false
-#| warning: false
-#| results: hide
-# Requires squidpy, matplotlib and seaborn.
-from pathlib import Path
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import squidpy as sq
-
-markers = ["Mbp", "Slc17a7", "Penk", "Hpca", "Gabra6"]
-ids = {
-    "anterior_1": "V1_Mouse_Brain_Sagittal_Anterior",
-    "anterior_2": "V1_Mouse_Brain_Sagittal_Anterior_Section_2",
-    "posterior_1": "V1_Mouse_Brain_Sagittal_Posterior",
-    "posterior_2": "V1_Mouse_Brain_Sagittal_Posterior_Section_2",
-}
-cache = Path.home() / ".cache" / "friendlycells"
-
-adatas = {}
-labels = {}
-for name, sample_id in ids.items():
-    adata = sq.datasets.visium(sample_id, base_dir=cache)
-    adata.var_names_make_unique()
-    counts = adata[:, markers].X.toarray()
-    top = (counts / counts.mean(axis=0)).argmax(axis=1)
-    adatas[name] = adata
-    labels[name] = np.array(markers)[top]
-
-
-def plot_slices(samples):
-    palette = ["#CC79A7", "#D55E00", "#0072B2", "#F0E442", "#009E73"]
-    colors = dict(zip(sorted(markers), palette))
-    fig, axes = plt.subplots(1, len(samples), layout="constrained")
-    for ax, (name, df) in zip(axes, samples.items()):
-        ax.scatter(
-            df["x"],
-            -df["y"],
-            c=df["label"].map(colors),
-            s=3,
-            linewidths=0,
-        )
-        ax.set_title(name)
-        ax.set_aspect("equal")
-        ax.axis("off")
-    handles = [
-        plt.Line2D([], [], marker="o", linestyle="", color=color, label=label)
-        for label, color in colors.items()
-    ]
-    fig.legend(
-        handles=handles,
-        loc="outside lower center",
-        ncol=len(colors),
-        frameon=False,
-    )
-    plt.show()
-
-
-def plot_similarity(sim):
-    style = {"font.size": 14, "font.weight": "bold", "figure.autolayout": True}
-    with plt.rc_context(style):
-        ax = sns.heatmap(
-            sim,
-            mask=np.tril(np.ones(sim.shape, dtype=bool), k=-1),
-            annot=True,
-            fmt=".2f",
-            cmap="inferno",
-            vmin=0,
-            vmax=1,
-            square=True,
-            cbar_kws={"label": "Similarity"},
-        )
-        ax.invert_yaxis()
-        plt.xticks(rotation=45, ha="right")
-    plt.show()
-```
-
-Each sample is a DataFrame of spot positions (in full-resolution image
-pixels) and labels:
-
-```{python}
-#| label: py-samples
-#| jupyter_compat: true
-from friendlycells import spatial_similarity
-
-samples = {
-    name: pd.DataFrame({
-        "x": adata.obsm["spatial"][:, 0],
-        "y": adata.obsm["spatial"][:, 1],
-        "label": labels[name],
-    }, index=adata.obs_names)
-    for name, adata in adatas.items()
-}
-print(samples["anterior_1"].head())
-```
-
-```{python}
-#| label: py-slices
-#| fig-dpi: 300
-#| fig-retina: 1
-#| jupyter_compat: true
-#| fig-width: 10
-#| fig-height: 3.5
-plot_slices(samples)
-```
-
-```{python}
-#| label: py-similarity
-#| jupyter_compat: true
-#| fig-width: 6
-#| fig-height: 5
-#| out-width: 60%
-sim = spatial_similarity(samples)
-print(sim.round(2))
-plot_similarity(sim)
-```
-:::
-
-The anterior sections are most similar to each other, as are the posterior
-sections, while anterior and posterior sections are dissimilar.
+As inter-sample similarities are calculated in terms of neighboring `label`s,
+different definitions of "neighborhoods" will lead to different results. By
+default, `friendlycells` tries to use a sensible definition for each
+technology.  You can check that your neighborhoods are sensible for your data
+by visualizing them using `plot_neighborhoods()`. More information about
+different neighborhood definitions can be found [here](neighborhoods.qmd).
 
 ## Citation
 
