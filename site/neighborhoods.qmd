@@ -7,31 +7,46 @@ knitr:
     message: false
 ---
 
-`spatial_similarity()` counts how often labels neighbor one another, so the
-result depends on which spots or cells count as neighbors. There are three
-ways to define a neighborhood:
+As `spatial_similarity()` quantifies spatial similarity in terms of how often
+labels neighbor one another, its output depends on which spots/cells are
+considered neighbors. In `friendlycells`, we provide three
+[standard](https://squidpy.readthedocs.io/en/stable/modules/gr/spatial_neighbors.html)
+ways to define neighbor relationships between spots/cells:
 
-- `"radius"`: all spots/cells within `radius`.
-- `"knn"`: the `k` nearest. Neighborhoods are symmetric, so a spot/cell can
-  have more than `k` neighbors when it is among the nearest of others.
+- `"radius"`: the neighbors of a spot/cell are all others within `radius` of
+  it.
+- `"knn"`: the neighbors of a spot/cell are the `k` spots/cells closest to it.
+  We ensure that neighborhoods are symmetric, so a spot/cell can have more than
+  `k` neighbors if it is among the nearest neighbors of many others.
 - `"delaunay"`: the spots/cells surrounding each one, by Delaunay
-  triangulation, ignoring links longer than `radius`.
+  triangulation, ignoring connections longer than `radius`.
 
-By default (`"auto"`), `"radius"` is used for positions on a grid and
-`"delaunay"` otherwise. The plots below, from `plot_neighborhoods()`, show
-the same generated tissue section, with holes and a narrow tear, as spots or
-cells, and each definition with a few parameter choices: each highlighted spot
-or cell has its own color, with its neighbors in a lighter shade. To check the
-neighborhoods in your own data, call `plot_neighborhoods()` with the same
-`samples`, `neighborhood`, `radius` and `k` as `spatial_similarity()`.
+The default setting in `spatial_similarity()`, `"auto"`, represents our
+recommendation without any knowledge of the data being investigated: it uses
+`"radius"` if spots/cells lie on a grid and uses `"delaunay"` if they instead
+represent segmented cells.
+
+The plots below show the impact of neighborhood definitions using
+`plot_neighborhoods()`. To visualize the neighborhoods in your own data, call
+`plot_neighborhoods()` with the same `samples`, `neighborhood`, `radius` and
+`k` as you want to use in `spatial_similarity()`. In each plot,
+`plot_neighborhoods()` highlights a small number of spots/cells in a solid
+color and colors their neighbors in a paler variant.
+
+The plots use the same generated tissue section, with holes and a narrow
+tear, laid out as your choice of data. Choose your language and data to
+see the plots for them:
+
+{{< include _selector.qmd >}}
+
+<details>
+<summary>Setup: generate the tissue section as spots, bins and cells</summary>
 
 ::: {.panel-tabset group="language"}
 ## R
 
 ```{r}
 #| label: r-setup
-#| code-fold: true
-#| code-summary: "Setup"
 library(friendlycells)
 
 # Whether positions, in multiples of the spacing, lie in a generated section
@@ -54,12 +69,39 @@ in_tissue <- function(u, v) {
 }
 ```
 
+```{r}
+#| label: r-hex-data
+rows <- expand.grid(col = -60:60, row = -40:40)
+rows <- rows[(rows$col + rows$row) %% 2 == 0, ]
+# plot_neighborhoods() needs a label column, but doesn't use it
+hex <- data.frame(x = 50 * rows$col, y = 50 * sqrt(3) * rows$row, label = "")
+hex <- hex[in_tissue(hex$x / 100, hex$y / 100), ]
+```
+
+```{r}
+#| label: r-square-data
+square <- data.frame(expand.grid(x = 8 * -30:30, y = 8 * -30:30), label = "")
+square <- square[in_tissue(square$x / 8, square$y / 8), ]
+```
+
+```{r}
+#| label: r-segmented-data
+set.seed(1)
+cells <- NULL
+for (step in c(1.2, 0.85)) {
+  grid <- expand.grid(u = seq(-30, 30, step), v = seq(-30, 30, step))
+  u <- grid$u + runif(nrow(grid), -0.3, 0.3) * step
+  v <- grid$v + runif(nrow(grid), -0.3, 0.3) * step
+  # Sparser on the left than on the right
+  keep <- in_tissue(u, v) & (u < 0) == (step > 1)
+  cells <- rbind(cells, data.frame(x = 10 * u[keep], y = 10 * v[keep], label = ""))
+}
+```
+
 ## Python
 
 ```{python}
 #| label: py-setup
-#| code-fold: true
-#| code-summary: "Setup"
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -85,32 +127,9 @@ def in_tissue(u, v):
     # A tear
     return inside & ~((np.abs(v - 0.4 * u + 6) < 0.6) & (u < -3))
 ```
-:::
-
-## Hexagonal grid
-
-Visium spots lie on a hexagonal grid, 100 µm apart.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-hex-data
-#| code-fold: true
-#| code-summary: "Generate the spots"
-rows <- expand.grid(col = -60:60, row = -40:40)
-rows <- rows[(rows$col + rows$row) %% 2 == 0, ]
-# plot_neighborhoods() needs a label column, but doesn't use it
-hex <- data.frame(x = 50 * rows$col, y = 50 * sqrt(3) * rows$row, label = "")
-hex <- hex[in_tissue(hex$x / 100, hex$y / 100), ]
-```
-
-## Python
 
 ```{python}
 #| label: py-hex-data
-#| code-fold: true
-#| code-summary: "Generate the spots"
 col, row = np.meshgrid(np.arange(-60, 61), np.arange(-40, 41))
 keep = (col + row) % 2 == 0
 x, y = 50 * col[keep], 50 * np.sqrt(3) * row[keep]
@@ -118,269 +137,16 @@ keep = in_tissue(x / 100, y / 100)
 # plot_neighborhoods() needs a label column, but doesn't use it
 hex_grid = pd.DataFrame({"x": x[keep], "y": y[keep], "label": ""})
 ```
-:::
-
-### Radius
-
-The default radius (120 µm, 1.2 times the spacing) gives each spot its six
-immediate neighbors, and larger radii add further rings, but spots at edges
-and holes have fewer.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-hex-radius
-#| layout-ncol: 3
-#| fig-width: 4
-#| fig-height: 4
-plot_neighborhoods(list("radius = 120 (default)" = hex), neighborhood = "radius")
-plot_neighborhoods(list("radius = 180" = hex), neighborhood = "radius", radius = 180)
-plot_neighborhoods(list("radius = 210" = hex), neighborhood = "radius", radius = 210)
-```
-
-## Python
-
-```{python}
-#| label: py-hex-radius
-#| layout-ncol: 3
-plot_neighborhoods({"radius = 120 (default)": hex_grid}, neighborhood="radius")
-plt.show()
-plot_neighborhoods({"radius = 180": hex_grid}, neighborhood="radius", radius=180)
-plt.show()
-plot_neighborhoods({"radius = 210": hex_grid}, neighborhood="radius", radius=210)
-plt.show()
-```
-:::
-
-### k nearest neighbors
-
-`k = 6` gives the same six as the default radius away from edges, but other
-values of `k` have to choose between spots at the same distance, so they
-choose arbitrarily. At edges, `"knn"` reaches further to make up `k`.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-hex-knn
-#| layout-ncol: 3
-#| fig-width: 4
-#| fig-height: 4
-plot_neighborhoods(list("k = 4" = hex), neighborhood = "knn", k = 4)
-plot_neighborhoods(list("k = 6 (default)" = hex), neighborhood = "knn")
-plot_neighborhoods(list("k = 8" = hex), neighborhood = "knn", k = 8)
-```
-
-## Python
-
-```{python}
-#| label: py-hex-knn
-#| layout-ncol: 3
-plot_neighborhoods({"k = 4": hex_grid}, neighborhood="knn", k=4)
-plt.show()
-plot_neighborhoods({"k = 6 (default)": hex_grid}, neighborhood="knn")
-plt.show()
-plot_neighborhoods({"k = 8": hex_grid}, neighborhood="knn", k=8)
-plt.show()
-```
-:::
-
-### Delaunay
-
-Delaunay triangulation also gives the six immediate neighbors away from edges,
-but links spots across holes and the tear. Its `radius` limits how far:
-150 µm stops these links, the default (300 µm, 3 times the spacing) keeps
-those across small holes, and with no radius every link is kept.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-hex-delaunay
-#| layout-ncol: 3
-#| fig-width: 4
-#| fig-height: 4
-plot_neighborhoods(list("radius = 150" = hex), neighborhood = "delaunay", radius = 150)
-plot_neighborhoods(list("radius = 300 (default)" = hex), neighborhood = "delaunay")
-plot_neighborhoods(list("no radius" = hex), neighborhood = "delaunay", radius = Inf)
-```
-
-## Python
-
-```{python}
-#| label: py-hex-delaunay
-#| layout-ncol: 3
-plot_neighborhoods({"radius = 150": hex_grid}, neighborhood="delaunay", radius=150)
-plt.show()
-plot_neighborhoods({"radius = 300 (default)": hex_grid}, neighborhood="delaunay")
-plt.show()
-plot_neighborhoods({"no radius": hex_grid}, neighborhood="delaunay", radius=np.inf)
-plt.show()
-```
-:::
-
-## Square grid
-
-Visium HD bins lie on a square grid, here of 8 µm bins, so the section is
-much smaller than on the hexagonal grid.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-square-data
-#| code-fold: true
-#| code-summary: "Generate the bins"
-square <- data.frame(expand.grid(x = 8 * -30:30, y = 8 * -30:30), label = "")
-square <- square[in_tissue(square$x / 8, square$y / 8), ]
-```
-
-## Python
 
 ```{python}
 #| label: py-square-data
-#| code-fold: true
-#| code-summary: "Generate the bins"
 x, y = np.meshgrid(np.arange(-30, 31), np.arange(-30, 31))
 keep = in_tissue(x, y)
 square = pd.DataFrame({"x": 8 * x[keep], "y": 8 * y[keep], "label": ""})
 ```
-:::
-
-### Radius
-
-The default radius (9.6 µm) gives each bin its four side neighbors, 12 µm
-(1.5 times the bin size) adds the four diagonals, and 17 µm adds the next bin
-along each side. Bins at edges and holes have fewer.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-square-radius
-#| layout-ncol: 3
-#| fig-width: 4
-#| fig-height: 4
-plot_neighborhoods(list("radius = 9.6 (default)" = square), neighborhood = "radius")
-plot_neighborhoods(list("radius = 12" = square), neighborhood = "radius", radius = 12)
-plot_neighborhoods(list("radius = 17" = square), neighborhood = "radius", radius = 17)
-```
-
-## Python
-
-```{python}
-#| label: py-square-radius
-#| layout-ncol: 3
-plot_neighborhoods({"radius = 9.6 (default)": square}, neighborhood="radius")
-plt.show()
-plot_neighborhoods({"radius = 12": square}, neighborhood="radius", radius=12)
-plt.show()
-plot_neighborhoods({"radius = 17": square}, neighborhood="radius", radius=17)
-plt.show()
-```
-:::
-
-### k nearest neighbors
-
-Away from edges, `k = 4` and `k = 8` give the same neighbors as the first two
-radii, but `k = 6` has to choose between the four diagonals, so it chooses
-arbitrarily. At edges, `"knn"` reaches further to make up `k`.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-square-knn
-#| layout-ncol: 3
-#| fig-width: 4
-#| fig-height: 4
-plot_neighborhoods(list("k = 4" = square), neighborhood = "knn", k = 4)
-plot_neighborhoods(list("k = 6 (default)" = square), neighborhood = "knn")
-plot_neighborhoods(list("k = 8" = square), neighborhood = "knn", k = 8)
-```
-
-## Python
-
-```{python}
-#| label: py-square-knn
-#| layout-ncol: 3
-plot_neighborhoods({"k = 4": square}, neighborhood="knn", k=4)
-plt.show()
-plot_neighborhoods({"k = 6 (default)": square}, neighborhood="knn")
-plt.show()
-plot_neighborhoods({"k = 8": square}, neighborhood="knn", k=8)
-plt.show()
-```
-:::
-
-### Delaunay
-
-Delaunay triangulation splits each square into two triangles along an
-arbitrary diagonal. A `radius` of 10 µm drops the diagonals, leaving the four
-side neighbors, but then `"delaunay"` is the same as the default `"radius"`;
-with larger radii the diagonals are arbitrary and links cross gaps, so avoid
-`"delaunay"` for bins.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-square-delaunay
-#| layout-ncol: 3
-#| fig-width: 4
-#| fig-height: 4
-plot_neighborhoods(list("radius = 10" = square), neighborhood = "delaunay", radius = 10)
-plot_neighborhoods(list("radius = 24 (default)" = square), neighborhood = "delaunay")
-plot_neighborhoods(list("no radius" = square), neighborhood = "delaunay", radius = Inf)
-```
-
-## Python
-
-```{python}
-#| label: py-square-delaunay
-#| layout-ncol: 3
-plot_neighborhoods({"radius = 10": square}, neighborhood="delaunay", radius=10)
-plt.show()
-plot_neighborhoods({"radius = 24 (default)": square}, neighborhood="delaunay")
-plt.show()
-plot_neighborhoods({"no radius": square}, neighborhood="delaunay", radius=np.inf)
-plt.show()
-```
-:::
-
-## Segmented cells
-
-Segmented cells (Xenium, or Visium HD with cell segmentation) are unevenly
-spaced. These cells are generated in the same section, sparser on the left
-than on the right: typically 9 µm from their nearest neighbor on the left, and
-6.5 µm on the right.
-
-::: {.panel-tabset group="language"}
-## R
-
-```{r}
-#| label: r-segmented-data
-#| code-fold: true
-#| code-summary: "Generate the cells"
-set.seed(1)
-cells <- NULL
-for (step in c(1.2, 0.85)) {
-  grid <- expand.grid(u = seq(-30, 30, step), v = seq(-30, 30, step))
-  u <- grid$u + runif(nrow(grid), -0.3, 0.3) * step
-  v <- grid$v + runif(nrow(grid), -0.3, 0.3) * step
-  # Sparser on the left than on the right
-  keep <- in_tissue(u, v) & (u < 0) == (step > 1)
-  cells <- rbind(cells, data.frame(x = 10 * u[keep], y = 10 * v[keep], label = ""))
-}
-```
-
-## Python
 
 ```{python}
 #| label: py-segmented-data
-#| code-fold: true
-#| code-summary: "Generate the cells"
 rng = np.random.default_rng(1)
 parts = []
 for step in [1.2, 0.85]:
@@ -394,15 +160,97 @@ cells = pd.concat(parts, ignore_index=True)
 ```
 :::
 
-### Radius
+</details>
 
+::: {.grid-hex}
+Visium spots lie on a hexagonal grid, 100 µm apart.
+:::
+
+::: {.grid-square}
+Visium HD bins lie on a square grid, here of 8 µm bins, so the section is
+much smaller than for Visium.
+:::
+
+::: {.grid-segmented}
+Segmented cells (Xenium, or Visium HD with cell segmentation) are unevenly
+spaced. These are sparser on the left than on the right: typically 9 µm from
+their nearest neighbor on the left, and 6.5 µm on the right.
+:::
+
+## Radius
+
+Under `"radius"`, the neighborhood of each spot/cell contains all others within
+`radius` of it, so those bordering gaps or on the edge of the tissue have
+fewer neighbors. Larger radii add further neighbors.
+
+::: {.grid-hex}
+The default radius (120 µm: 1.2 times the spacing) gives each spot its six
+immediate neighbors on the grid. Larger radii add further rings.
+:::
+
+::: {.grid-square}
+The default radius (9.6 µm) gives each bin its four side neighbors, 12 µm
+(1.5 times the bin size) adds the four diagonals, and 17 µm adds the next bin
+along each side.
+:::
+
+::: {.grid-segmented}
 No radius suits every cell: one that links the dense cells leaves sparse cells
 with few neighbors or none, while one that links the sparse cells gives dense
 cells many.
+:::
 
-::: {.panel-tabset group="language"}
-## R
+::: {.lang-r .grid-hex}
+```{r}
+#| label: r-hex-radius
+#| layout-ncol: 3
+#| fig-width: 4
+#| fig-height: 4
+plot_neighborhoods(list("radius = 120 (default)" = hex), neighborhood = "radius")
+plot_neighborhoods(list("radius = 180" = hex), neighborhood = "radius", radius = 180)
+plot_neighborhoods(list("radius = 210" = hex), neighborhood = "radius", radius = 210)
+```
+:::
 
+::: {.lang-py .grid-hex}
+```{python}
+#| label: py-hex-radius
+#| layout-ncol: 3
+plot_neighborhoods({"radius = 120 (default)": hex_grid}, neighborhood="radius")
+plt.show()
+plot_neighborhoods({"radius = 180": hex_grid}, neighborhood="radius", radius=180)
+plt.show()
+plot_neighborhoods({"radius = 210": hex_grid}, neighborhood="radius", radius=210)
+plt.show()
+```
+:::
+
+::: {.lang-r .grid-square}
+```{r}
+#| label: r-square-radius
+#| layout-ncol: 3
+#| fig-width: 4
+#| fig-height: 4
+plot_neighborhoods(list("radius = 9.6 (default)" = square), neighborhood = "radius")
+plot_neighborhoods(list("radius = 12" = square), neighborhood = "radius", radius = 12)
+plot_neighborhoods(list("radius = 17" = square), neighborhood = "radius", radius = 17)
+```
+:::
+
+::: {.lang-py .grid-square}
+```{python}
+#| label: py-square-radius
+#| layout-ncol: 3
+plot_neighborhoods({"radius = 9.6 (default)": square}, neighborhood="radius")
+plt.show()
+plot_neighborhoods({"radius = 12": square}, neighborhood="radius", radius=12)
+plt.show()
+plot_neighborhoods({"radius = 17": square}, neighborhood="radius", radius=17)
+plt.show()
+```
+:::
+
+::: {.lang-r .grid-segmented}
 ```{r}
 #| label: r-segmented-radius
 #| layout-ncol: 3
@@ -412,9 +260,9 @@ plot_neighborhoods(list("radius = 10" = cells), neighborhood = "radius", radius 
 plot_neighborhoods(list("radius = 15" = cells), neighborhood = "radius", radius = 15)
 plot_neighborhoods(list("radius = 20" = cells), neighborhood = "radius", radius = 20)
 ```
+:::
 
-## Python
-
+::: {.lang-py .grid-segmented}
 ```{python}
 #| label: py-segmented-radius
 #| layout-ncol: 3
@@ -427,13 +275,75 @@ plt.show()
 ```
 :::
 
-### k nearest neighbors
+## k nearest neighbors
 
-`"knn"` gives every cell at least `k` neighbors, however far away they are.
+Under `"knn"`, every spot/cell has at least `k` neighbors, however far away
+they are: for spots/cells near edges or gaps in the tissue, `"knn"` reaches
+further to make up `k` neighbors.
 
-::: {.panel-tabset group="language"}
-## R
+::: {.grid-hex}
+For a spot with six immediate neighbors on the grid, `k = 6` yields the same
+neighborhood as the default radius. For other values of `k`, spots at the same
+distance are chosen arbitrarily.
+:::
 
+::: {.grid-square}
+Away from edges, `k = 4` and `k = 8` give the same neighbors as radii of
+9.6 µm and 12 µm, but `k = 6` has to choose between the four diagonals, so it
+chooses arbitrarily.
+:::
+
+::: {.lang-r .grid-hex}
+```{r}
+#| label: r-hex-knn
+#| layout-ncol: 3
+#| fig-width: 4
+#| fig-height: 4
+plot_neighborhoods(list("k = 4" = hex), neighborhood = "knn", k = 4)
+plot_neighborhoods(list("k = 6 (default)" = hex), neighborhood = "knn")
+plot_neighborhoods(list("k = 8" = hex), neighborhood = "knn", k = 8)
+```
+:::
+
+::: {.lang-py .grid-hex}
+```{python}
+#| label: py-hex-knn
+#| layout-ncol: 3
+plot_neighborhoods({"k = 4": hex_grid}, neighborhood="knn", k=4)
+plt.show()
+plot_neighborhoods({"k = 6 (default)": hex_grid}, neighborhood="knn")
+plt.show()
+plot_neighborhoods({"k = 8": hex_grid}, neighborhood="knn", k=8)
+plt.show()
+```
+:::
+
+::: {.lang-r .grid-square}
+```{r}
+#| label: r-square-knn
+#| layout-ncol: 3
+#| fig-width: 4
+#| fig-height: 4
+plot_neighborhoods(list("k = 4" = square), neighborhood = "knn", k = 4)
+plot_neighborhoods(list("k = 6 (default)" = square), neighborhood = "knn")
+plot_neighborhoods(list("k = 8" = square), neighborhood = "knn", k = 8)
+```
+:::
+
+::: {.lang-py .grid-square}
+```{python}
+#| label: py-square-knn
+#| layout-ncol: 3
+plot_neighborhoods({"k = 4": square}, neighborhood="knn", k=4)
+plt.show()
+plot_neighborhoods({"k = 6 (default)": square}, neighborhood="knn")
+plt.show()
+plot_neighborhoods({"k = 8": square}, neighborhood="knn", k=8)
+plt.show()
+```
+:::
+
+::: {.lang-r .grid-segmented}
 ```{r}
 #| label: r-segmented-knn
 #| layout-ncol: 3
@@ -443,9 +353,9 @@ plot_neighborhoods(list("k = 4" = cells), neighborhood = "knn", k = 4)
 plot_neighborhoods(list("k = 6 (default)" = cells), neighborhood = "knn")
 plot_neighborhoods(list("k = 8" = cells), neighborhood = "knn", k = 8)
 ```
+:::
 
-## Python
-
+::: {.lang-py .grid-segmented}
 ```{python}
 #| label: py-segmented-knn
 #| layout-ncol: 3
@@ -458,15 +368,85 @@ plt.show()
 ```
 :::
 
-### Delaunay
+## Delaunay
 
-`"delaunay"` links each cell to the cells around it, whatever their spacing.
-Its `radius` (by default 3 times the typical spacing, about 21 µm) only drops
-links across gaps, such as holes.
+As Delaunay triangulation connects a spot/cell to its neighbors in all
+directions (even if one direction is far away), it links each one to those
+surrounding it, whatever their spacing. This can, however, lead to undesirable
+connections stretching across large gaps. The `radius` parameter limits how
+far these connections can stretch: the default (3 times the typical spacing)
+keeps those across small holes, and an infinite radius keeps every connection
+regardless of the size of the gap it spans.
 
-::: {.panel-tabset group="language"}
-## R
+::: {.grid-hex}
+On the hexagonal grid, Delaunay triangulation yields the six immediate
+neighbors when they exist. A radius of 150 µm prevents connections beyond
+them, and the default is 300 µm.
+:::
 
+::: {.grid-square}
+Delaunay triangulation splits each square into two triangles along an
+arbitrary diagonal. A `radius` of 10 µm drops the diagonals, leaving the four
+side neighbors, but then `"delaunay"` is the same as the default `"radius"`;
+with larger radii the diagonals are arbitrary and connections cross gaps, so
+avoid `"delaunay"` for bins.
+:::
+
+::: {.grid-segmented}
+Here, the default radius is about 21 µm.
+:::
+
+::: {.lang-r .grid-hex}
+```{r}
+#| label: r-hex-delaunay
+#| layout-ncol: 3
+#| fig-width: 4
+#| fig-height: 4
+plot_neighborhoods(list("radius = 150" = hex), neighborhood = "delaunay", radius = 150)
+plot_neighborhoods(list("radius = 300 (default)" = hex), neighborhood = "delaunay")
+plot_neighborhoods(list("no radius" = hex), neighborhood = "delaunay", radius = Inf)
+```
+:::
+
+::: {.lang-py .grid-hex}
+```{python}
+#| label: py-hex-delaunay
+#| layout-ncol: 3
+plot_neighborhoods({"radius = 150": hex_grid}, neighborhood="delaunay", radius=150)
+plt.show()
+plot_neighborhoods({"radius = 300 (default)": hex_grid}, neighborhood="delaunay")
+plt.show()
+plot_neighborhoods({"no radius": hex_grid}, neighborhood="delaunay", radius=np.inf)
+plt.show()
+```
+:::
+
+::: {.lang-r .grid-square}
+```{r}
+#| label: r-square-delaunay
+#| layout-ncol: 3
+#| fig-width: 4
+#| fig-height: 4
+plot_neighborhoods(list("radius = 10" = square), neighborhood = "delaunay", radius = 10)
+plot_neighborhoods(list("radius = 24 (default)" = square), neighborhood = "delaunay")
+plot_neighborhoods(list("no radius" = square), neighborhood = "delaunay", radius = Inf)
+```
+:::
+
+::: {.lang-py .grid-square}
+```{python}
+#| label: py-square-delaunay
+#| layout-ncol: 3
+plot_neighborhoods({"radius = 10": square}, neighborhood="delaunay", radius=10)
+plt.show()
+plot_neighborhoods({"radius = 24 (default)": square}, neighborhood="delaunay")
+plt.show()
+plot_neighborhoods({"no radius": square}, neighborhood="delaunay", radius=np.inf)
+plt.show()
+```
+:::
+
+::: {.lang-r .grid-segmented}
 ```{r}
 #| label: r-segmented-delaunay
 #| layout-ncol: 3
@@ -476,9 +456,9 @@ plot_neighborhoods(list("radius = 12" = cells), neighborhood = "delaunay", radiu
 plot_neighborhoods(list("default radius" = cells), neighborhood = "delaunay")
 plot_neighborhoods(list("no radius" = cells), neighborhood = "delaunay", radius = Inf)
 ```
+:::
 
-## Python
-
+::: {.lang-py .grid-segmented}
 ```{python}
 #| label: py-segmented-delaunay
 #| layout-ncol: 3

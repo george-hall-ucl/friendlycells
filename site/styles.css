@@ -66,3 +66,9 @@
 #quarto-document-content a:has(> code) { text-decoration: none; }
 #quarto-document-content a:has(> code):hover { text-decoration: underline; }
 #quarto-document-content a > code { color: var(--bs-code-color); }
+
+/* Neighborhoods plots and notes for the chosen data's layout */
+:root[data-tech]:not([data-tech="visium"]) .grid-hex,
+:root[data-tech]:not([data-tech="hd-bins"]) .grid-square,
+:root[data-tech="visium"] .grid-segmented,
+:root[data-tech="hd-bins"] .grid-segmented { display: none; }
