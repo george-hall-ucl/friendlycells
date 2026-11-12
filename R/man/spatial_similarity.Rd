@@ -6,6 +6,9 @@
 \usage{
 spatial_similarity(
   samples,
+  x,
+  y,
+  labels,
   normalize = TRUE,
   pools = NULL,
   only_transitions = FALSE,
@@ -15,9 +18,13 @@ spatial_similarity(
 )
 }
 \arguments{
-\item{samples}{Named list of data frames, one per sample, with columns: \code{x},
-\code{y} (positions of spots/cells in any unit, e.g. pixels or micrometres,
-consistent between samples); \code{label} (e.g. cell type).}
+\item{samples}{Named list of data frames, one per sample, with a row per
+spot/cell.}
+
+\item{x, y}{Names of the columns holding the positions of spots/cells, in any
+unit (e.g. pixels or micrometres) consistent between samples.}
+
+\item{labels}{Name of the column holding the labels (e.g. cell types).}
 
 \item{normalize}{Divide each sample's connection counts by their total to
 control for sample size.}
@@ -39,7 +46,7 @@ nearest-neighbor distances within 10\% of their median) and \code{"delaunay"}
 otherwise, with a message saying which was used.}
 
 \item{radius}{Neighborhood radius for \code{"radius"}, or maximum link length for
-\code{"delaunay"}, in the units of \code{x} and \code{y}. By default, set from the
+\code{"delaunay"}, in the units of the positions. By default, set from the
 spacing of the data: set to the median distance from each spot/cell to its
 nearest neighbor over all samples, multiplied by 1.2 for \code{"radius"} or 3
 for \code{"delaunay"}. Used to make neighborhoods wider or narrower.}
@@ -86,7 +93,9 @@ samples <- list(
     label = c("y", "y")
   )
 )
-spatial_similarity(samples)
-spatial_similarity(samples, pools = list(ab = c("a", "b"), c = "c"))
-spatial_similarity(samples, neighborhood = "delaunay")
+spatial_similarity(samples, "x", "y", "label")
+spatial_similarity(samples, "x", "y", "label",
+  pools = list(ab = c("a", "b"), c = "c")
+)
+spatial_similarity(samples, "x", "y", "label", neighborhood = "delaunay")
 }

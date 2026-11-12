@@ -3,9 +3,11 @@
 #' Computes spatial similarity between spatial transcriptomics samples by
 #' counting connections between neighboring spots/cells.
 #'
-#' @param samples Named list of data frames, one per sample, with columns: `x`,
-#'   `y` (positions of spots/cells in any unit, e.g. pixels or micrometres,
-#'   consistent between samples); `label` (e.g. cell type).
+#' @param samples Named list of data frames, one per sample, with a row per
+#'   spot/cell.
+#' @param x,y Names of the columns holding the positions of spots/cells, in any
+#'   unit (e.g. pixels or micrometres) consistent between samples.
+#' @param labels Name of the column holding the labels (e.g. cell types).
 #' @param normalize Divide each sample's connection counts by their total to
 #'   control for sample size.
 #' @param pools Optional named list mapping pool names to sample names;
@@ -22,7 +24,7 @@
 #'   nearest-neighbor distances within 10% of their median) and `"delaunay"`
 #'   otherwise, with a message saying which was used.
 #' @param radius Neighborhood radius for `"radius"`, or maximum link length for
-#'   `"delaunay"`, in the units of `x` and `y`. By default, set from the
+#'   `"delaunay"`, in the units of the positions. By default, set from the
 #'   spacing of the data: set to the median distance from each spot/cell to its
 #'   nearest neighbor over all samples, multiplied by 1.2 for `"radius"` or 3
 #'   for `"delaunay"`. Used to make neighborhoods wider or narrower.
@@ -57,22 +59,28 @@
 #'     label = c("y", "y")
 #'   )
 #' )
-#' spatial_similarity(samples)
-#' spatial_similarity(samples, pools = list(ab = c("a", "b"), c = "c"))
-#' spatial_similarity(samples, neighborhood = "delaunay")
+#' spatial_similarity(samples, "x", "y", "label")
+#' spatial_similarity(samples, "x", "y", "label",
+#'   pools = list(ab = c("a", "b"), c = "c")
+#' )
+#' spatial_similarity(samples, "x", "y", "label", neighborhood = "delaunay")
 #' @importFrom stats dist median
 #' @export
-spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
+spatial_similarity <- function(samples, x, y, labels, normalize = TRUE,
+                               pools = NULL,
                                only_transitions = FALSE,
                                neighborhood = c(
                                  "auto", "radius", "knn",
                                  "delaunay"
                                ),
                                radius = NULL, k = 6) {
-  settings <- neighborhood_settings(samples, match.arg(neighborhood), radius)
+  settings <- neighborhood_settings(
+    samples, list(x = x, y = y, labels = labels), match.arg(neighborhood),
+    radius
+  )
   neighborhood <- settings$neighborhood
   radius <- settings$radius
-  if (anyNA(unlist(lapply(samples, function(s) as.character(s$label))))) {
+  if (anyNA(unlist(lapply(samples, function(s) as.character(s[[labels]]))))) {
     # e.g. read.csv() reads a label literally called "NA" as missing
     warning(
       "Some labels are 'NA'. These will be treated as a label called ",
@@ -80,14 +88,12 @@ spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
       "the absence of a label and dropped."
     )
   }
-  samples <- lapply(samples, function(s) {
-    s$label <- ifelse(is.na(s$label), "NA", as.character(s$label))
-    s
-  })
   # Sorted so floating-point results don't depend on sample order
-  labels <- sort(unique(unlist(lapply(samples, function(s) s$label))))
+  all_labels <- sort(unique(unlist(lapply(samples, function(s) {
+    na_as_label(s[[labels]])
+  }))))
   counts <- do.call(rbind, lapply(samples, connection_counts,
-    labels = labels,
+    x = x, y = y, labels = labels, all_labels = all_labels,
     only_transitions = only_transitions,
     neighborhood = neighborhood, radius = radius,
     k = k
@@ -117,20 +123,29 @@ spatial_similarity <- function(samples, normalize = TRUE, pools = NULL,
   1 - d
 }
 
-# Checks the samples, then resolves "auto" and the default radius from all
-# samples
-neighborhood_settings <- function(samples, neighborhood, radius) {
-  if (!all(vapply(
-    samples, function(s) all(c("x", "y", "label") %in% names(s)),
-    logical(1)
-  ))) {
-    stop(
-      "Each sample needs columns x, y (positions, e.g. in micrometres) ",
-      "and label."
-    )
+# Checks each sample has the named columns (a list of x, y and maybe labels),
+# then resolves "auto" and the default radius from all samples
+neighborhood_settings <- function(samples, columns, neighborhood, radius) {
+  for (arg in names(columns)) {
+    column <- columns[[arg]]
+    if (!is.character(column) || length(column) != 1) {
+      stop("`", arg, "` must be the name of a column.")
+    }
+    missing <- !vapply(samples, function(s) column %in% names(s), logical(1))
+    if (any(missing)) {
+      where <- if (is.null(names(samples))) {
+        which(missing)
+      } else {
+        names(samples)[missing]
+      }
+      stop(
+        "Column \"", column, "\" (`", arg, "`) is missing from samples: ",
+        paste(where, collapse = ", ")
+      )
+    }
   }
   if (neighborhood == "auto" || (is.null(radius) && neighborhood != "knn")) {
-    nn <- nn_distances(samples)
+    nn <- nn_distances(samples, columns$x, columns$y)
   }
   if (neighborhood == "auto") {
     neighborhood <- if (on_grid(nn)) "radius" else "delaunay"
@@ -146,12 +161,12 @@ neighborhood_settings <- function(samples, neighborhood, radius) {
 }
 
 # Distance from each spot or cell to its nearest neighbor, over all samples
-nn_distances <- function(samples) {
+nn_distances <- function(samples, x, y) {
   unlist(lapply(samples, function(s) {
     if (nrow(s) < 2) {
       return(numeric(0))
     }
-    dbscan::kNN(cbind(s$x, s$y), k = 1)$dist
+    dbscan::kNN(cbind(s[[x]], s[[y]]), k = 1)$dist
   }))
 }
 
@@ -168,13 +183,21 @@ default_radius <- function(nn, neighborhood) {
   median(nn) * if (neighborhood == "radius") 1.2 else 3
 }
 
-connection_counts <- function(sample, labels, only_transitions = FALSE,
+connection_counts <- function(sample, x, y, labels, all_labels,
+                              only_transitions = FALSE,
                               neighborhood = "radius", radius = NULL, k = 6) {
-  label <- factor(sample$label, levels = labels)
-  pairs <- neighbor_pairs(cbind(sample$x, sample$y), neighborhood, radius, k)
-  counts <- unclass(table(label[pairs[, 1]], label[pairs[, 2]]))
+  codes <- factor(na_as_label(sample[[labels]]), levels = all_labels)
+  pairs <- neighbor_pairs(
+    cbind(sample[[x]], sample[[y]]), neighborhood, radius, k
+  )
+  counts <- unclass(table(codes[pairs[, 1]], codes[pairs[, 2]]))
   if (only_transitions) diag(counts) <- 0
   as.vector(t(counts))
+}
+
+# Missing labels are counted as a label called "NA"
+na_as_label <- function(labels) {
+  ifelse(is.na(labels), "NA", as.character(labels))
 }
 
 # Pairs (i, j) of neighboring rows of xy, each pair listed in both directions

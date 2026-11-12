@@ -6,6 +6,8 @@
 \usage{
 plot_neighborhoods(
   samples,
+  x,
+  y,
   samples_to_plot = NULL,
   neighborhood = c("auto", "radius", "knn", "delaunay"),
   radius = NULL,
@@ -15,9 +17,11 @@ plot_neighborhoods(
 )
 }
 \arguments{
-\item{samples}{Named list of data frames, one per sample, with columns: \code{x},
-\code{y} (positions of spots/cells in any unit, e.g. pixels or micrometres,
-consistent between samples); \code{label} (e.g. cell type).}
+\item{samples}{Named list of data frames, one per sample, with a row per
+spot/cell.}
+
+\item{x, y}{Names of the columns holding the positions of spots/cells, in any
+unit (e.g. pixels or micrometres) consistent between samples.}
 
 \item{samples_to_plot}{Names of the samples to plot. By default, plot all
 samples.}
@@ -32,7 +36,7 @@ nearest-neighbor distances within 10\% of their median) and \code{"delaunay"}
 otherwise, with a message saying which was used.}
 
 \item{radius}{Neighborhood radius for \code{"radius"}, or maximum link length for
-\code{"delaunay"}, in the units of \code{x} and \code{y}. By default, set from the
+\code{"delaunay"}, in the units of the positions. By default, set from the
 spacing of the data: set to the median distance from each spot/cell to its
 nearest neighbor over all samples, multiplied by 1.2 for \code{"radius"} or 3
 for \code{"delaunay"}. Used to make neighborhoods wider or narrower.}
@@ -60,5 +64,5 @@ neighborhood settings give the neighborhoods intended.
 \examples{
 grid <- expand.grid(x = 1:40, y = 1:40)
 samples <- list(a = data.frame(grid, label = "x"))
-plot_neighborhoods(samples)
+plot_neighborhoods(samples, "x", "y")
 }

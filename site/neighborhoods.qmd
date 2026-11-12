@@ -28,8 +28,8 @@ represent segmented cells.
 
 The plots below show the impact of neighborhood definitions using
 `plot_neighborhoods()`. To visualize the neighborhoods in your own data, call
-`plot_neighborhoods()` with the same `samples`, `neighborhood`, `radius` and
-`k` as you want to use in `spatial_similarity()`. In each plot,
+`plot_neighborhoods()` with the same `samples`, `x`, `y`, `neighborhood`,
+`radius` and `k` as you want to use in `spatial_similarity()`. In each plot,
 `plot_neighborhoods()` highlights a small number of spots/cells in a solid
 color and colors their neighbors in a paler variant.
 
@@ -73,14 +73,13 @@ in_tissue <- function(u, v) {
 #| label: r-hex-data
 rows <- expand.grid(col = -60:60, row = -40:40)
 rows <- rows[(rows$col + rows$row) %% 2 == 0, ]
-# plot_neighborhoods() needs a label column, but doesn't use it
-hex <- data.frame(x = 50 * rows$col, y = 50 * sqrt(3) * rows$row, label = "")
+hex <- data.frame(x = 50 * rows$col, y = 50 * sqrt(3) * rows$row)
 hex <- hex[in_tissue(hex$x / 100, hex$y / 100), ]
 ```
 
 ```{r}
 #| label: r-square-data
-square <- data.frame(expand.grid(x = 8 * -30:30, y = 8 * -30:30), label = "")
+square <- expand.grid(x = 8 * -30:30, y = 8 * -30:30)
 square <- square[in_tissue(square$x / 8, square$y / 8), ]
 ```
 
@@ -94,7 +93,7 @@ for (step in c(1.2, 0.85)) {
   v <- grid$v + runif(nrow(grid), -0.3, 0.3) * step
   # Sparser on the left than on the right
   keep <- in_tissue(u, v) & (u < 0) == (step > 1)
-  cells <- rbind(cells, data.frame(x = 10 * u[keep], y = 10 * v[keep], label = ""))
+  cells <- rbind(cells, data.frame(x = 10 * u[keep], y = 10 * v[keep]))
 }
 ```
 
@@ -134,15 +133,14 @@ col, row = np.meshgrid(np.arange(-60, 61), np.arange(-40, 41))
 keep = (col + row) % 2 == 0
 x, y = 50 * col[keep], 50 * np.sqrt(3) * row[keep]
 keep = in_tissue(x / 100, y / 100)
-# plot_neighborhoods() needs a label column, but doesn't use it
-hex_grid = pd.DataFrame({"x": x[keep], "y": y[keep], "label": ""})
+hex_grid = pd.DataFrame({"x": x[keep], "y": y[keep]})
 ```
 
 ```{python}
 #| label: py-square-data
 x, y = np.meshgrid(np.arange(-30, 31), np.arange(-30, 31))
 keep = in_tissue(x, y)
-square = pd.DataFrame({"x": 8 * x[keep], "y": 8 * y[keep], "label": ""})
+square = pd.DataFrame({"x": 8 * x[keep], "y": 8 * y[keep]})
 ```
 
 ```{python}
@@ -155,7 +153,7 @@ for step in [1.2, 0.85]:
     v = v.ravel() + rng.uniform(-0.3, 0.3, v.size) * step
     # Sparser on the left than on the right
     keep = in_tissue(u, v) & ((u < 0) == (step > 1))
-    parts.append(pd.DataFrame({"x": 10 * u[keep], "y": 10 * v[keep], "label": ""}))
+    parts.append(pd.DataFrame({"x": 10 * u[keep], "y": 10 * v[keep]}))
 cells = pd.concat(parts, ignore_index=True)
 ```
 :::
@@ -206,9 +204,9 @@ cells many.
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("radius = 120 (default)" = hex), neighborhood = "radius")
-plot_neighborhoods(list("radius = 180" = hex), neighborhood = "radius", radius = 180)
-plot_neighborhoods(list("radius = 210" = hex), neighborhood = "radius", radius = 210)
+plot_neighborhoods(list("radius = 120 (default)" = hex), "x", "y", neighborhood = "radius")
+plot_neighborhoods(list("radius = 180" = hex), "x", "y", neighborhood = "radius", radius = 180)
+plot_neighborhoods(list("radius = 210" = hex), "x", "y", neighborhood = "radius", radius = 210)
 ```
 :::
 
@@ -216,11 +214,11 @@ plot_neighborhoods(list("radius = 210" = hex), neighborhood = "radius", radius =
 ```{python}
 #| label: py-hex-radius
 #| layout-ncol: 3
-plot_neighborhoods({"radius = 120 (default)": hex_grid}, neighborhood="radius")
+plot_neighborhoods({"radius = 120 (default)": hex_grid}, "x", "y", neighborhood="radius")
 plt.show()
-plot_neighborhoods({"radius = 180": hex_grid}, neighborhood="radius", radius=180)
+plot_neighborhoods({"radius = 180": hex_grid}, "x", "y", neighborhood="radius", radius=180)
 plt.show()
-plot_neighborhoods({"radius = 210": hex_grid}, neighborhood="radius", radius=210)
+plot_neighborhoods({"radius = 210": hex_grid}, "x", "y", neighborhood="radius", radius=210)
 plt.show()
 ```
 :::
@@ -231,9 +229,9 @@ plt.show()
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("radius = 9.6 (default)" = square), neighborhood = "radius")
-plot_neighborhoods(list("radius = 12" = square), neighborhood = "radius", radius = 12)
-plot_neighborhoods(list("radius = 17" = square), neighborhood = "radius", radius = 17)
+plot_neighborhoods(list("radius = 9.6 (default)" = square), "x", "y", neighborhood = "radius")
+plot_neighborhoods(list("radius = 12" = square), "x", "y", neighborhood = "radius", radius = 12)
+plot_neighborhoods(list("radius = 17" = square), "x", "y", neighborhood = "radius", radius = 17)
 ```
 :::
 
@@ -241,11 +239,11 @@ plot_neighborhoods(list("radius = 17" = square), neighborhood = "radius", radius
 ```{python}
 #| label: py-square-radius
 #| layout-ncol: 3
-plot_neighborhoods({"radius = 9.6 (default)": square}, neighborhood="radius")
+plot_neighborhoods({"radius = 9.6 (default)": square}, "x", "y", neighborhood="radius")
 plt.show()
-plot_neighborhoods({"radius = 12": square}, neighborhood="radius", radius=12)
+plot_neighborhoods({"radius = 12": square}, "x", "y", neighborhood="radius", radius=12)
 plt.show()
-plot_neighborhoods({"radius = 17": square}, neighborhood="radius", radius=17)
+plot_neighborhoods({"radius = 17": square}, "x", "y", neighborhood="radius", radius=17)
 plt.show()
 ```
 :::
@@ -256,9 +254,9 @@ plt.show()
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("radius = 10" = cells), neighborhood = "radius", radius = 10)
-plot_neighborhoods(list("radius = 15" = cells), neighborhood = "radius", radius = 15)
-plot_neighborhoods(list("radius = 20" = cells), neighborhood = "radius", radius = 20)
+plot_neighborhoods(list("radius = 10" = cells), "x", "y", neighborhood = "radius", radius = 10)
+plot_neighborhoods(list("radius = 15" = cells), "x", "y", neighborhood = "radius", radius = 15)
+plot_neighborhoods(list("radius = 20" = cells), "x", "y", neighborhood = "radius", radius = 20)
 ```
 :::
 
@@ -266,11 +264,11 @@ plot_neighborhoods(list("radius = 20" = cells), neighborhood = "radius", radius 
 ```{python}
 #| label: py-segmented-radius
 #| layout-ncol: 3
-plot_neighborhoods({"radius = 10": cells}, neighborhood="radius", radius=10)
+plot_neighborhoods({"radius = 10": cells}, "x", "y", neighborhood="radius", radius=10)
 plt.show()
-plot_neighborhoods({"radius = 15": cells}, neighborhood="radius", radius=15)
+plot_neighborhoods({"radius = 15": cells}, "x", "y", neighborhood="radius", radius=15)
 plt.show()
-plot_neighborhoods({"radius = 20": cells}, neighborhood="radius", radius=20)
+plot_neighborhoods({"radius = 20": cells}, "x", "y", neighborhood="radius", radius=20)
 plt.show()
 ```
 :::
@@ -299,9 +297,9 @@ chooses arbitrarily.
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("k = 4" = hex), neighborhood = "knn", k = 4)
-plot_neighborhoods(list("k = 6 (default)" = hex), neighborhood = "knn")
-plot_neighborhoods(list("k = 8" = hex), neighborhood = "knn", k = 8)
+plot_neighborhoods(list("k = 4" = hex), "x", "y", neighborhood = "knn", k = 4)
+plot_neighborhoods(list("k = 6 (default)" = hex), "x", "y", neighborhood = "knn")
+plot_neighborhoods(list("k = 8" = hex), "x", "y", neighborhood = "knn", k = 8)
 ```
 :::
 
@@ -309,11 +307,11 @@ plot_neighborhoods(list("k = 8" = hex), neighborhood = "knn", k = 8)
 ```{python}
 #| label: py-hex-knn
 #| layout-ncol: 3
-plot_neighborhoods({"k = 4": hex_grid}, neighborhood="knn", k=4)
+plot_neighborhoods({"k = 4": hex_grid}, "x", "y", neighborhood="knn", k=4)
 plt.show()
-plot_neighborhoods({"k = 6 (default)": hex_grid}, neighborhood="knn")
+plot_neighborhoods({"k = 6 (default)": hex_grid}, "x", "y", neighborhood="knn")
 plt.show()
-plot_neighborhoods({"k = 8": hex_grid}, neighborhood="knn", k=8)
+plot_neighborhoods({"k = 8": hex_grid}, "x", "y", neighborhood="knn", k=8)
 plt.show()
 ```
 :::
@@ -324,9 +322,9 @@ plt.show()
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("k = 4" = square), neighborhood = "knn", k = 4)
-plot_neighborhoods(list("k = 6 (default)" = square), neighborhood = "knn")
-plot_neighborhoods(list("k = 8" = square), neighborhood = "knn", k = 8)
+plot_neighborhoods(list("k = 4" = square), "x", "y", neighborhood = "knn", k = 4)
+plot_neighborhoods(list("k = 6 (default)" = square), "x", "y", neighborhood = "knn")
+plot_neighborhoods(list("k = 8" = square), "x", "y", neighborhood = "knn", k = 8)
 ```
 :::
 
@@ -334,11 +332,11 @@ plot_neighborhoods(list("k = 8" = square), neighborhood = "knn", k = 8)
 ```{python}
 #| label: py-square-knn
 #| layout-ncol: 3
-plot_neighborhoods({"k = 4": square}, neighborhood="knn", k=4)
+plot_neighborhoods({"k = 4": square}, "x", "y", neighborhood="knn", k=4)
 plt.show()
-plot_neighborhoods({"k = 6 (default)": square}, neighborhood="knn")
+plot_neighborhoods({"k = 6 (default)": square}, "x", "y", neighborhood="knn")
 plt.show()
-plot_neighborhoods({"k = 8": square}, neighborhood="knn", k=8)
+plot_neighborhoods({"k = 8": square}, "x", "y", neighborhood="knn", k=8)
 plt.show()
 ```
 :::
@@ -349,9 +347,9 @@ plt.show()
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("k = 4" = cells), neighborhood = "knn", k = 4)
-plot_neighborhoods(list("k = 6 (default)" = cells), neighborhood = "knn")
-plot_neighborhoods(list("k = 8" = cells), neighborhood = "knn", k = 8)
+plot_neighborhoods(list("k = 4" = cells), "x", "y", neighborhood = "knn", k = 4)
+plot_neighborhoods(list("k = 6 (default)" = cells), "x", "y", neighborhood = "knn")
+plot_neighborhoods(list("k = 8" = cells), "x", "y", neighborhood = "knn", k = 8)
 ```
 :::
 
@@ -359,11 +357,11 @@ plot_neighborhoods(list("k = 8" = cells), neighborhood = "knn", k = 8)
 ```{python}
 #| label: py-segmented-knn
 #| layout-ncol: 3
-plot_neighborhoods({"k = 4": cells}, neighborhood="knn", k=4)
+plot_neighborhoods({"k = 4": cells}, "x", "y", neighborhood="knn", k=4)
 plt.show()
-plot_neighborhoods({"k = 6 (default)": cells}, neighborhood="knn")
+plot_neighborhoods({"k = 6 (default)": cells}, "x", "y", neighborhood="knn")
 plt.show()
-plot_neighborhoods({"k = 8": cells}, neighborhood="knn", k=8)
+plot_neighborhoods({"k = 8": cells}, "x", "y", neighborhood="knn", k=8)
 plt.show()
 ```
 :::
@@ -402,9 +400,9 @@ Here, the default radius is about 21 µm.
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("radius = 150" = hex), neighborhood = "delaunay", radius = 150)
-plot_neighborhoods(list("radius = 300 (default)" = hex), neighborhood = "delaunay")
-plot_neighborhoods(list("no radius" = hex), neighborhood = "delaunay", radius = Inf)
+plot_neighborhoods(list("radius = 150" = hex), "x", "y", neighborhood = "delaunay", radius = 150)
+plot_neighborhoods(list("radius = 300 (default)" = hex), "x", "y", neighborhood = "delaunay")
+plot_neighborhoods(list("no radius" = hex), "x", "y", neighborhood = "delaunay", radius = Inf)
 ```
 :::
 
@@ -412,11 +410,11 @@ plot_neighborhoods(list("no radius" = hex), neighborhood = "delaunay", radius = 
 ```{python}
 #| label: py-hex-delaunay
 #| layout-ncol: 3
-plot_neighborhoods({"radius = 150": hex_grid}, neighborhood="delaunay", radius=150)
+plot_neighborhoods({"radius = 150": hex_grid}, "x", "y", neighborhood="delaunay", radius=150)
 plt.show()
-plot_neighborhoods({"radius = 300 (default)": hex_grid}, neighborhood="delaunay")
+plot_neighborhoods({"radius = 300 (default)": hex_grid}, "x", "y", neighborhood="delaunay")
 plt.show()
-plot_neighborhoods({"no radius": hex_grid}, neighborhood="delaunay", radius=np.inf)
+plot_neighborhoods({"no radius": hex_grid}, "x", "y", neighborhood="delaunay", radius=np.inf)
 plt.show()
 ```
 :::
@@ -427,9 +425,9 @@ plt.show()
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("radius = 10" = square), neighborhood = "delaunay", radius = 10)
-plot_neighborhoods(list("radius = 24 (default)" = square), neighborhood = "delaunay")
-plot_neighborhoods(list("no radius" = square), neighborhood = "delaunay", radius = Inf)
+plot_neighborhoods(list("radius = 10" = square), "x", "y", neighborhood = "delaunay", radius = 10)
+plot_neighborhoods(list("radius = 24 (default)" = square), "x", "y", neighborhood = "delaunay")
+plot_neighborhoods(list("no radius" = square), "x", "y", neighborhood = "delaunay", radius = Inf)
 ```
 :::
 
@@ -437,11 +435,11 @@ plot_neighborhoods(list("no radius" = square), neighborhood = "delaunay", radius
 ```{python}
 #| label: py-square-delaunay
 #| layout-ncol: 3
-plot_neighborhoods({"radius = 10": square}, neighborhood="delaunay", radius=10)
+plot_neighborhoods({"radius = 10": square}, "x", "y", neighborhood="delaunay", radius=10)
 plt.show()
-plot_neighborhoods({"radius = 24 (default)": square}, neighborhood="delaunay")
+plot_neighborhoods({"radius = 24 (default)": square}, "x", "y", neighborhood="delaunay")
 plt.show()
-plot_neighborhoods({"no radius": square}, neighborhood="delaunay", radius=np.inf)
+plot_neighborhoods({"no radius": square}, "x", "y", neighborhood="delaunay", radius=np.inf)
 plt.show()
 ```
 :::
@@ -452,9 +450,9 @@ plt.show()
 #| layout-ncol: 3
 #| fig-width: 4
 #| fig-height: 4
-plot_neighborhoods(list("radius = 12" = cells), neighborhood = "delaunay", radius = 12)
-plot_neighborhoods(list("default radius" = cells), neighborhood = "delaunay")
-plot_neighborhoods(list("no radius" = cells), neighborhood = "delaunay", radius = Inf)
+plot_neighborhoods(list("radius = 12" = cells), "x", "y", neighborhood = "delaunay", radius = 12)
+plot_neighborhoods(list("default radius" = cells), "x", "y", neighborhood = "delaunay")
+plot_neighborhoods(list("no radius" = cells), "x", "y", neighborhood = "delaunay", radius = Inf)
 ```
 :::
 
@@ -462,11 +460,11 @@ plot_neighborhoods(list("no radius" = cells), neighborhood = "delaunay", radius 
 ```{python}
 #| label: py-segmented-delaunay
 #| layout-ncol: 3
-plot_neighborhoods({"radius = 12": cells}, neighborhood="delaunay", radius=12)
+plot_neighborhoods({"radius = 12": cells}, "x", "y", neighborhood="delaunay", radius=12)
 plt.show()
-plot_neighborhoods({"default radius": cells}, neighborhood="delaunay")
+plot_neighborhoods({"default radius": cells}, "x", "y", neighborhood="delaunay")
 plt.show()
-plot_neighborhoods({"no radius": cells}, neighborhood="delaunay", radius=np.inf)
+plot_neighborhoods({"no radius": cells}, "x", "y", neighborhood="delaunay", radius=np.inf)
 plt.show()
 ```
 :::

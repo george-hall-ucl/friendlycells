@@ -42,12 +42,12 @@ The main function is `spatial_similarity()`, which receives a [named
 list]{.lang-r}[dict]{.lang-py} of [data frames]{.lang-r}[`pandas`
 DataFrames]{.lang-py} (one for each sample you want to compare).
 
-Each sample's [data frame]{.lang-r}[DataFrame]{.lang-py} should comprise three
-columns:
+Each sample's [data frame]{.lang-r}[DataFrame]{.lang-py} needs three columns,
+whose names you give to `spatial_similarity()`:
 
 * `x`: horizontal coordinates of each spot/cell (any unit, but must be the same in each sample);
 * `y`: vertical coordinates of each spot/cell, in the same unit as `x`;
-* `label`: metadata used to characterise spatial regions, e.g. cell types.
+* `labels`: metadata used to characterise spatial regions, e.g. cell types.
 
 Select your language and technology to see how to make this
 [list]{.lang-r}[dict]{.lang-py} and run `spatial_similarity()`.
@@ -69,7 +69,7 @@ samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
 samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
                                     y = GetTissueCoordinates(diseased)$y,
                                     label = diseased$cell_type)
-sim <- spatial_similarity(samples)
+sim <- spatial_similarity(samples, x = "x", y = "y", labels = "label")
 ```
 :::
 
@@ -94,7 +94,7 @@ samples["diseased"] = pd.DataFrame({
     "y": diseased.obsm["spatial"][:, 1],
     "label": diseased.obs["cell_type"],
 })
-sim = spatial_similarity(samples)
+sim = spatial_similarity(samples, x="x", y="y", labels="label")
 ```
 :::
 
@@ -114,7 +114,7 @@ samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
 samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
                                     y = GetTissueCoordinates(diseased)$y,
                                     label = diseased$cell_type)
-sim <- spatial_similarity(samples)
+sim <- spatial_similarity(samples, x = "x", y = "y", labels = "label")
 ```
 :::
 
@@ -140,7 +140,7 @@ samples["diseased"] = pd.DataFrame({
     "y": diseased.obsm["spatial"][:, 1],
     "label": diseased.obs["cell_type"],
 })
-sim = spatial_similarity(samples)
+sim = spatial_similarity(samples, x="x", y="y", labels="label")
 ```
 :::
 
@@ -160,7 +160,7 @@ samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
 samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
                                     y = GetTissueCoordinates(diseased)$y,
                                     label = diseased$cell_type)
-sim <- spatial_similarity(samples)
+sim <- spatial_similarity(samples, x = "x", y = "y", labels = "label")
 ```
 :::
 
@@ -190,7 +190,7 @@ samples["diseased"] = pd.DataFrame({
     "y": cells.y,
     "label": table.obs["cell_type"],
 })
-sim = spatial_similarity(samples)
+sim = spatial_similarity(samples, x="x", y="y", labels="label")
 ```
 :::
 
@@ -210,7 +210,7 @@ samples[["healthy"]] <- data.frame(x = GetTissueCoordinates(healthy)$x,
 samples[["diseased"]] <- data.frame(x = GetTissueCoordinates(diseased)$x,
                                     y = GetTissueCoordinates(diseased)$y,
                                     label = diseased$cell_type)
-sim <- spatial_similarity(samples)
+sim <- spatial_similarity(samples, x = "x", y = "y", labels = "label")
 ```
 :::
 
@@ -236,7 +236,7 @@ samples["diseased"] = pd.DataFrame({
     "y": diseased.obsm["spatial"][:, 1],
     "label": diseased.obs["cell_type"],
 })
-sim = spatial_similarity(samples)
+sim = spatial_similarity(samples, x="x", y="y", labels="label")
 ```
 :::
 

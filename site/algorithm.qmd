@@ -63,10 +63,12 @@ samples <- list(
 )
 
 labels <- sort(unique(unlist(lapply(samples, `[[`, "label"))))
-radius <- friendlycells:::neighborhood_settings(samples, "radius", NULL)$radius
+radius <- friendlycells:::neighborhood_settings(
+  samples, list(x = "x", y = "y"), "radius", NULL
+)$radius
 per_sample <- lapply(samples, function(s) {
   pairs <- friendlycells:::neighbor_pairs(cbind(s$x, s$y), "radius", radius)
-  counts <- friendlycells:::connection_counts(s, labels,
+  counts <- friendlycells:::connection_counts(s, "x", "y", "label", labels,
     neighborhood = "radius", radius = radius
   )
   list(
@@ -85,7 +87,9 @@ toy <- list(
   samples = unname(per_sample),
   profiles = unname(profiles),
   distance = unname(as.matrix(dist(profiles))),
-  similarity = unname(spatial_similarity(samples, neighborhood = "radius"))
+  similarity = unname(spatial_similarity(samples, "x", "y", "label",
+    neighborhood = "radius"
+  ))
 )
 cat(
   '<script type="application/json" id="algorithm-data">',
