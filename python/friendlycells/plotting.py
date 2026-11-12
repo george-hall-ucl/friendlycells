@@ -11,6 +11,8 @@ _COLORS = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#C
 
 def plot_neighborhoods(
     samples,
+    x,
+    y,
     samples_to_plot=None,
     neighborhood="auto",
     radius=None,
@@ -24,7 +26,7 @@ def plot_neighborhoods(
     neighbors, to check that the neighborhood settings give the neighborhoods
     intended. Needs matplotlib (pip install friendlycells[plot]).
 
-    samples, neighborhood, radius, k: as for spatial_similarity.
+    samples, x, y, neighborhood, radius, k: as for spatial_similarity.
     samples_to_plot: names of the samples to plot. By default, plot all
         samples.
     n: number of neighborhoods to highlight in each sample. Colors repeat after 7.
@@ -37,11 +39,13 @@ def plot_neighborhoods(
     unknown = [name for name in samples_to_plot if name not in samples]
     if unknown:
         raise ValueError("Unknown samples_to_plot: " + ", ".join(map(str, unknown)))
-    neighborhood, radius = _neighborhood_settings(samples, neighborhood, radius)
+    neighborhood, radius = _neighborhood_settings(
+        samples, {"x": x, "y": y}, neighborhood, radius
+    )
     fig, axes = _panels(len(samples_to_plot))
     rng = np.random.default_rng(seed)
     for ax, name in zip(axes.flat, samples_to_plot):
-        xy = samples[name][["x", "y"]].to_numpy(dtype=float)
+        xy = samples[name][[x, y]].to_numpy(dtype=float)
         _draw_patch(
             ax, xy, *_example_neighborhoods(xy, neighborhood, radius, k, n, rng)
         )
@@ -82,7 +86,7 @@ def _draw_patch(ax, xy, patch, hoods):
         fill[hood[1:]] = (color + 1) / 2
         fill[hood[0]] = color
     spacing = np.median(
-        _nn_distances({"patch": pd.DataFrame(xy[patch], columns=["x", "y"])})
+        _nn_distances({"patch": pd.DataFrame(xy[patch], columns=["x", "y"])}, "x", "y")
     )
     if not np.isfinite(spacing):
         spacing = 1

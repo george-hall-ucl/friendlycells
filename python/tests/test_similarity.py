@@ -36,34 +36,38 @@ def assert_sim(sim, ab, ac, bc):
 
 def test_neighbor_counts():
     """Hexagonal neighbor counts give similarity 1 - d / max(d)."""
-    sim = spatial_similarity(SAMPLES, normalize=False)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False)
     assert_sim(sim, 1 - np.sqrt(2) / 4, 0, 1 - np.sqrt(10) / 4)
 
 
 def test_names_in_input_order():
     """Output row/column names respect input sample order."""
-    sim = spatial_similarity(dict(reversed(SAMPLES.items())), normalize=False)
+    sim = spatial_similarity(
+        dict(reversed(SAMPLES.items())), "x", "y", "label", normalize=False
+    )
     assert list(sim.index) == ["C", "B", "A"]
 
 
 def test_identical_samples():
     """Identical samples are seen as fully similar."""
-    sim = spatial_similarity({"A": SAMPLES["A"], "B": SAMPLES["A"]})
+    sim = spatial_similarity({"A": SAMPLES["A"], "B": SAMPLES["A"]}, "x", "y", "label")
     np.testing.assert_array_equal(sim.to_numpy(), np.ones((2, 2)))
 
 
 def test_categorical_labels():
     """Categorical labels yield the same output as string labels."""
-    sim = spatial_similarity(SAMPLES, normalize=False)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False)
     categories = {
         n: s.assign(label=s["label"].astype("category")) for n, s in SAMPLES.items()
     }
-    pd.testing.assert_frame_equal(spatial_similarity(categories, normalize=False), sim)
+    pd.testing.assert_frame_equal(
+        spatial_similarity(categories, "x", "y", "label", normalize=False), sim
+    )
 
 
 def test_missing_labels():
     """Labels read as missing (e.g. NA, nan, None) become one label called 'NA', with a warning."""
-    sim = spatial_similarity(SAMPLES, normalize=False)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False)
     # pd.read_csv() turns labels written as NA, nan, None, etc. into NaN
     csv = pd.read_csv(
         io.StringIO(
@@ -76,24 +80,26 @@ def test_missing_labels():
     from_file = {name: s.drop(columns="sample") for name, s in csv.groupby("sample")}
     with pytest.warns(UserWarning, match="treated as a label called 'NA'"):
         pd.testing.assert_frame_equal(
-            spatial_similarity(from_file, normalize=False), sim
+            spatial_similarity(from_file, "x", "y", "label", normalize=False), sim
         )
 
 
 def test_normalize():
     """Normalize divides counts by their total."""
     dmax = np.sqrt(11 / 8)
-    sim = spatial_similarity(SAMPLES)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label")
     assert_sim(sim, 1 - (np.sqrt(6) / 12) / dmax, 1 - np.sqrt(4 / 3) / dmax, 0)
 
 
 def test_no_connections_with_normalize():
     """Samples where no spot has any neighbor yield NA and a warning."""
-    sim = spatial_similarity(SAMPLES)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label")
     # D's two spots don't touch, so it has no connections to normalize
     d = visium([0, 0], [0, 4], ["a", "a"])
     with pytest.warns(UserWarning, match="no neighboring spots: D"):
-        with_d = spatial_similarity({**SAMPLES, "D": d}, neighborhood="radius")
+        with_d = spatial_similarity(
+            {**SAMPLES, "D": d}, "x", "y", "label", neighborhood="radius"
+        )
     pd.testing.assert_frame_equal(with_d.loc[["A", "B", "C"], ["A", "B", "C"]], sim)
     assert with_d["D"].isna().all() and with_d.loc["D"].isna().all()
 
@@ -101,7 +107,7 @@ def test_no_connections_with_normalize():
 def test_pools():
     """Pools sum counts of their samples."""
     pools = {"p1": ["A", "B"], "p2": ["C"], "p3": ["A"]}
-    sim = spatial_similarity(SAMPLES, normalize=False, pools=pools)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False, pools=pools)
     assert list(sim.index) == ["p1", "p2", "p3"]
     assert_sim(sim, 0, 1 - np.sqrt(6) / np.sqrt(38), 1 - 4 / np.sqrt(38))
 
@@ -121,7 +127,7 @@ def test_pig_esophagus_paper():
         "6 months": ["6 months (B)", "6 months (C)"],
         "Native": ["Native DP1", "Native DP2", "Native DP3", "Native (C)"],
     }
-    sim = spatial_similarity(samples, pools=pools)
+    sim = spatial_similarity(samples, "x", "y", "label", pools=pools)
     paper = np.array(
         [
             [1.00, 0.01, 0.03, 0.09, 0.00],
@@ -139,7 +145,9 @@ def test_pig_esophagus_paper():
 
 def test_only_transitions():
     """only_transitions drops same-label contacts, so only borders count."""
-    sim = spatial_similarity(SAMPLES, normalize=False, only_transitions=True)
+    sim = spatial_similarity(
+        SAMPLES, "x", "y", "label", normalize=False, only_transitions=True
+    )
     assert_sim(sim, 0.5, 0, 0.5)
 
 
@@ -148,7 +156,7 @@ def test_only_transitions_single_label():
     with pytest.warns(
         UserWarning, match=r"with different labels \(no transitions\): C"
     ):
-        sim = spatial_similarity(SAMPLES, only_transitions=True)
+        sim = spatial_similarity(SAMPLES, "x", "y", "label", only_transitions=True)
     assert sim.loc["A", "B"] == 1
     assert sim["C"].isna().all() and sim.loc["C"].isna().all()
 
@@ -156,7 +164,8 @@ def test_only_transitions_single_label():
 def test_only_transitions_default_unchanged():
     """only_transitions=False gives the default result."""
     pd.testing.assert_frame_equal(
-        spatial_similarity(SAMPLES, only_transitions=False), spatial_similarity(SAMPLES)
+        spatial_similarity(SAMPLES, "x", "y", "label", only_transitions=False),
+        spatial_similarity(SAMPLES, "x", "y", "label"),
     )
 
 
@@ -164,7 +173,7 @@ def test_only_transitions_with_pools():
     """Pools sum the border counts of their samples."""
     pools = {"p1": ["A", "B"], "p2": ["C"], "p3": ["A"]}
     sim = spatial_similarity(
-        SAMPLES, normalize=False, pools=pools, only_transitions=True
+        SAMPLES, "x", "y", "label", normalize=False, pools=pools, only_transitions=True
     )
     assert_sim(sim, 0, 2 / 3, 1 / 3)
 
@@ -204,11 +213,22 @@ def test_delaunay_collinear():
     )
 
 
-def test_missing_xy():
-    """Missing x/y columns give an informative error."""
-    no_xy = {"A": pd.DataFrame({"array_row": [0], "array_col": [0], "label": ["a"]})}
-    with pytest.raises(ValueError, match="needs columns x, y"):
-        spatial_similarity(no_xy)
+def test_columns():
+    """Columns are chosen by name, with an error naming missing ones."""
+    renamed = {
+        n: pd.DataFrame(
+            {"col": s["x"], "row": s["y"], "cell_type": s["label"], "label": "z"}
+        )
+        for n, s in SAMPLES.items()
+    }
+    pd.testing.assert_frame_equal(
+        spatial_similarity(renamed, "col", "row", "cell_type"),
+        spatial_similarity(SAMPLES, "x", "y", "label"),
+    )
+    with pytest.raises(
+        ValueError, match=r'"cell_type" \(labels\) is missing from samples: A, B, C'
+    ):
+        spatial_similarity(SAMPLES, "x", "y", "cell_type")
 
 
 def test_default_radius():
@@ -218,21 +238,21 @@ def test_default_radius():
         "a": pd.DataFrame({"x": [0, 10], "y": 0}),
         "b": pd.DataFrame({"x": [0, 22, 50], "y": 0}),
     }
-    nn = _nn_distances(s)
+    nn = _nn_distances(s, "x", "y")
     assert _default_radius(nn, "radius") == pytest.approx(1.2 * 22)
     assert _default_radius(nn, "delaunay") == pytest.approx(3 * 22)
 
 
 def test_auto(capsys):
     """Auto uses radius on a grid and delaunay otherwise, saying which."""
-    spatial_similarity(SAMPLES)
+    spatial_similarity(SAMPLES, "x", "y", "label")
     assert 'neighborhood="radius"' in capsys.readouterr().err
     cells = {
         "A": pd.DataFrame(
             {"x": [0, 4, 11, 13, 30], "y": [0, 9, 2, 20, 6], "label": "a"}
         )
     }
-    spatial_similarity(cells)
+    spatial_similarity(cells, "x", "y", "label")
     assert 'neighborhood="delaunay"' in capsys.readouterr().err
 
 
@@ -240,7 +260,8 @@ def test_default_radius_units():
     """With the default radius, results don't depend on units."""
     pixels = {n: s.assign(x=s["x"] / 0.3, y=s["y"] / 0.3) for n, s in SAMPLES.items()}
     pd.testing.assert_frame_equal(
-        spatial_similarity(pixels), spatial_similarity(SAMPLES)
+        spatial_similarity(pixels, "x", "y", "label"),
+        spatial_similarity(SAMPLES, "x", "y", "label"),
     )
 
 
@@ -265,4 +286,4 @@ def test_example_neighborhoods():
 def test_unknown_samples_to_plot():
     """Unknown samples_to_plot give an error."""
     with pytest.raises(ValueError, match="Unknown"):
-        plot_neighborhoods(SAMPLES, samples_to_plot=["D"])
+        plot_neighborhoods(SAMPLES, "x", "y", samples_to_plot=["D"])

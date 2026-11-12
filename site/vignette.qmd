@@ -200,7 +200,7 @@ plot_slices(samples)
 #| fig-width: 6
 #| fig-height: 5
 #| out-width: 60%
-sim <- spatial_similarity(samples)
+sim <- spatial_similarity(samples, "x", "y", "label")
 round(sim, 2)
 plot_similarity(sim)
 ```
@@ -242,7 +242,7 @@ plot_slices(samples)
 #| fig-width: 6
 #| fig-height: 5
 #| out-width: 60%
-sim = spatial_similarity(samples)
+sim = spatial_similarity(samples, "x", "y", "label")
 print(sim.round(2))
 plot_similarity(sim)
 ```
