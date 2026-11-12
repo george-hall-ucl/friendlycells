@@ -9,6 +9,7 @@ project:
     - lang.js
     - selector.js
     - code-links.js
+    - algorithm.js
 
 execute:
   freeze: auto
@@ -25,6 +26,7 @@ website:
       - href: index.qmd
         text: Home
       - vignette.qmd
+      - algorithm.qmd
       - neighborhoods.qmd
       - reference.qmd
     right:
@@ -49,3 +51,4 @@ format:
         <script src="lang.js"></script>
         <script src="selector.js"></script>
         <script src="code-links.js"></script>
+        <script src="algorithm.js"></script>

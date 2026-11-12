@@ -39,35 +39,20 @@ Requires `pandas`, `numpy` and `scipy`.
 ## Quick start
 
 The main function is `spatial_similarity()`, which receives a [named
-list]{.lang-r}[dict]{.lang-py} of [data frames]{.lang-r}[DataFrames]{.lang-py},
-one for each sample in the comparison.
+list]{.lang-r}[dict]{.lang-py} of [data frames]{.lang-r}[`pandas`
+DataFrames]{.lang-py} (one for each sample you want to compare).
 
-Each sample's [data frame]{.lang-r}[DataFrame]{.lang-py} comprises three
+Each sample's [data frame]{.lang-r}[DataFrame]{.lang-py} should comprise three
 columns:
 
-* `x` (horizontal coordinates, e.g. in pixels or micrometres)
-* `y` (vertical coordinates, e.g. in pixels or micrometres)
-* `label` (what you want to test for connections between, e.g. cell types).
+* `x`: horizontal coordinates of each spot/cell (any unit, but must be the same in each sample);
+* `y`: vertical coordinates of each spot/cell, in the same unit as `x`;
+* `label`: metadata used to characterise spatial regions, e.g. cell types.
 
 Select your language and technology to see how to make this
 [list]{.lang-r}[dict]{.lang-py} and run `spatial_similarity()`.
 
-```{=html}
-<div class="selector">
-  <div class="selector-label">Language</div>
-  <div class="selector-options" data-choice="lang" role="group" aria-label="Language">
-    <button type="button" class="btn btn-outline-primary" data-value="r">R</button>
-    <button type="button" class="btn btn-outline-primary" data-value="py">Python</button>
-  </div>
-  <div class="selector-label">Data</div>
-  <div class="selector-options" data-choice="tech" role="group" aria-label="Data">
-    <button type="button" class="btn btn-outline-primary" data-value="visium">Visium</button>
-    <button type="button" class="btn btn-outline-primary" data-value="hd-bins">Visium HD (bins)</button>
-    <button type="button" class="btn btn-outline-primary" data-value="hd-cells">Visium HD (cells)</button>
-    <button type="button" class="btn btn-outline-primary" data-value="xenium">Xenium</button>
-  </div>
-</div>
-```
+{{< include _selector.qmd >}}
 
 ::: {.snippet .lang-r .tech-visium}
 ```r
@@ -255,16 +240,18 @@ sim = spatial_similarity(samples)
 ```
 :::
 
-This returns a sample × sample matrix of similarity scores: 1 = identical, 0 =
-least similar pair. See the [vignette](vignette.qmd) for a worked example, and
-[Reference](reference.qmd) for full documentation of all options.
+`spatial_similarity()` returns a sample × sample matrix of similarity scores,
+where a score of 1 means that two samples are identical and 0 means that they
+are the least similar pair. See the [vignette](vignette.qmd) for a worked
+example, and [Reference](reference.qmd) for full documentation of all options.
 
 As inter-sample similarities are calculated in terms of neighboring `label`s,
-different definitions of "neighborhoods" will lead to different results. By
-default, `friendlycells` tries to use a sensible definition for each
-technology.  You can check that your neighborhoods are sensible for your data
-by visualizing them using `plot_neighborhoods()`. More information about
-different neighborhood definitions can be found [here](neighborhoods.qmd).
+different definitions of "neighboring" will likely produce different results.
+By default, `friendlycells` tries to use a sensible definition for each
+technology. You can use `plot_neighborhoods()` to visualize the impact of your
+neighborhood settings in `spatial_similarity()`. See the [neighborhood
+documentation](neighborhoods.qmd) for more information about different
+definitions.
 
 ## Citation
 

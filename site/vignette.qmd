@@ -10,13 +10,14 @@ This example uses four Visium mouse brain sections from 10x Genomics (two
 anterior, two posterior), with each spot labelled by its most enriched of five
 marker genes.
 
+<details>
+<summary>Setup: download and label the data, define plotting helpers</summary>
+
 ::: {.panel-tabset group="language"}
 ## R
 
 ```{r}
 #| label: r-setup
-#| code-fold: true
-#| code-summary: "Setup: download and label the data, define plotting helpers"
 #| message: false
 #| warning: false
 #| results: hide
@@ -80,47 +81,11 @@ plot_similarity <- function(sim) {
 }
 ```
 
-Each sample is a data frame of spot positions (in full-resolution image
-pixels) and labels:
-
-```{r}
-#| label: r-samples
-library(friendlycells)
-
-samples <- lapply(seurat_objects, function(cells) {
-  coords <- GetTissueCoordinates(cells)
-  data.frame(x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
-             row.names = coords$cell)
-})
-head(samples$anterior_1)
-```
-
-```{r}
-#| label: r-slices
-#| fig-dpi: 300
-#| fig-retina: 1
-#| fig-width: 10
-#| fig-height: 3.5
-plot_slices(samples)
-```
-
-```{r}
-#| label: r-similarity
-#| fig-width: 6
-#| fig-height: 5
-#| out-width: 60%
-sim <- spatial_similarity(samples)
-round(sim, 2)
-plot_similarity(sim)
-```
-
 ## Python
 
 ```{python}
 #| label: py-setup
 #| jupyter_compat: true
-#| code-fold: true
-#| code-summary: "Setup: download and label the data, define plotting helpers"
 #| message: false
 #| warning: false
 #| results: hide
@@ -199,6 +164,48 @@ def plot_similarity(sim):
         plt.xticks(rotation=45, ha="right")
     plt.show()
 ```
+:::
+
+</details>
+
+::: {.panel-tabset group="language"}
+## R
+
+Each sample is a data frame of spot positions (in full-resolution image
+pixels) and labels:
+
+```{r}
+#| label: r-samples
+library(friendlycells)
+
+samples <- lapply(seurat_objects, function(cells) {
+  coords <- GetTissueCoordinates(cells)
+  data.frame(x = coords$x, y = coords$y, label = cells$cell_type[coords$cell],
+             row.names = coords$cell)
+})
+head(samples$anterior_1)
+```
+
+```{r}
+#| label: r-slices
+#| fig-dpi: 300
+#| fig-retina: 1
+#| fig-width: 10
+#| fig-height: 3.5
+plot_slices(samples)
+```
+
+```{r}
+#| label: r-similarity
+#| fig-width: 6
+#| fig-height: 5
+#| out-width: 60%
+sim <- spatial_similarity(samples)
+round(sim, 2)
+plot_similarity(sim)
+```
+
+## Python
 
 Each sample is a DataFrame of spot positions (in full-resolution image
 pixels) and labels:
