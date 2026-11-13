@@ -1,3 +1,3 @@
-# friendlyspots 0.1.0
+# friendlycells 0.1.0
 
 * Initial CRAN submission.

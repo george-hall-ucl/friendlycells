@@ -1,4 +1,4 @@
 library(testthat)
-library(friendlyspots)
+library(friendlycells)
 
-test_check("friendlyspots")
+test_check("friendlycells")

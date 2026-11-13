@@ -4,67 +4,215 @@ title: "Reference"
 
 ## `spatial_similarity()`
 
-Spatial similarity between spatial transcriptomics samples.
+Computes spatial similarity between spatial transcriptomics samples by counting connections between neighboring spots / cells.
 
 ::: {.panel-tabset group="language"}
 ## R
 
 ```r
-spatial_similarity(samples, normalize = TRUE, pools = NULL,
-                   only_transitions = FALSE)
+spatial_similarity(samples, x, y, labels, normalize = TRUE, pools = NULL,
+                   only_transitions = FALSE,
+                   neighborhood = c("auto", "radius", "knn", "delaunay"),
+                   radius = NULL, k = 6)
 ```
 
 ## Python
 
 ```python
-spatial_similarity(samples, normalize=True, pools=None, only_transitions=False)
+spatial_similarity(samples, x, y, labels, normalize=True, pools=None,
+                   only_transitions=False, neighborhood="auto", radius=None, k=6)
 ```
 :::
 
 ### Arguments
 
 `samples`
-: Named list (R) or dict (Python) of data frames, one per sample, with columns
-  `array_row`, `array_col` (Visium array coordinates) and `label`.
+: [Named list]{.lang-r}[Dict]{.lang-py} of [data frames]{.lang-r}[DataFrames]{.lang-py},
+  one per sample, with a row per spot/cell.
+
+`x`, `y`
+: Names of the columns holding the positions of spots/cells, in any unit (e.g.
+  pixels or micrometres) consistent between samples.
+
+`labels`
+: Name of the column holding the labels (e.g. cell types).
 
 `normalize`
-: Divide each sample's connection counts by their total, so that samples with
-  different numbers of spots can be compared. With `normalize = FALSE`, raw
-  counts are compared instead.
+: Divide each sample's connection counts by their total to control for sample
+  size.
 
 `pools`
-: Optional named list (R) or dict (Python) mapping pool names to sample names.
-  Connection counts are summed within each pool before comparing, e.g.
-  `list(group_1 = c("sample_1", "sample_2"), group_2 = "sample_3")` in R or
-  `{"group_1": ["sample_1", "sample_2"], "group_2": ["sample_3"]}` in Python.
+: Optional [named list]{.lang-r}[dict]{.lang-py} mapping pool names to
+  [sample names]{.lang-r}[lists of sample names]{.lang-py}; connection counts
+  are summed within each pool, e.g.
+  [`list(group_1 = c("sample_1", "sample_2"), group_2 = "sample_3")`]{.lang-r}[`{"group_1": ["sample_1", "sample_2"], "group_2": ["sample_3"]}`]{.lang-py}.
 
 `only_transitions`
-: Only count connections between spots with distinct labels (i.e. borders),
-  not between spots with the same label.
+: If [`TRUE`]{.lang-r}[`True`]{.lang-py}, only count connections between spots
+  with distinct labels (i.e. borders); does not count connections between
+  spots with the same label.
+
+`neighborhood`
+: Definition of the neighbourhood of each spot/cell: `"radius"` selects all
+  within `radius`; `"knn"` selects the `k` nearest (symmetric: both are
+  included in each other's neighborhood if either is among the other's
+  nearest); or `"delaunay"` selects those surrounding it by Delaunay
+  triangulation, dropping links longer than `radius`. The default, `"auto"`,
+  uses `"radius"` if the positions lie on a grid (at least 75% of
+  nearest-neighbor distances within 10% of their median) and `"delaunay"`
+  otherwise, with a message saying which was used.
+
+`radius`
+: Neighborhood radius for `"radius"`, or maximum link length for
+  `"delaunay"`, in the units of the positions. By default, set from the spacing
+  of the data: set to the median distance from each spot/cell to its nearest
+  neighbor over all samples, multiplied by 1.2 for `"radius"` or 3 for
+  `"delaunay"`. Used to make neighborhoods wider or narrower.
+
+`k`
+: Number of nearest neighbors for
+  [`neighborhood = "knn"`]{.lang-r}[`neighborhood="knn"`]{.lang-py}. Ties are
+  broken arbitrarily.
 
 ### Value
 
-A symmetric matrix (R) or DataFrame (Python) of similarities, with rows and
-columns named by sample (or pool) in input order. Similarities lie in \[0, 1\]:
-1 = identical, 0 = least similar pair. With `normalize = TRUE`, samples with no
-neighbouring spots (or, with `only_transitions = TRUE`, no neighbouring spots
-with different labels) get `NA` (R) or `NaN` (Python).
+A symmetric [matrix]{.lang-r}[DataFrame]{.lang-py} of similarities, with rows
+and columns named by sample (or pool) in input order. Similarities lie in
+\[0, 1\]: 1 = identical, 0 = least similar pair. With
+[`normalize = TRUE`]{.lang-r}[`normalize=True`]{.lang-py}, samples with no
+neighbouring spots (or, with
+[`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py}, no
+neighbouring spots with different labels) get [`NA`]{.lang-r}[`NaN`]{.lang-py}.
 
 ### Details
 
-For each sample, every spot is paired with each of its six hexagonal
-neighbours, and the pairs are counted by label (e.g. how often a `Neuron` spot
-borders an `Astrocyte` spot). With `only_transitions = TRUE`, pairs with the
-same label are not counted. These counts form one vector per sample, which is
-optionally pooled and normalised. Similarity is `1 - d / max(d)`, where `d` is
-the Euclidean distance between two samples' vectors.
+Each sample is characterised in terms of the number of times labels neighbor
+one another (e.g. how often a `Neuron` borders an `Astrocyte`). With
+[`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py},
+connections between identical labels are excluded. These connection counts form
+one vector per sample, which is optionally pooled (across samples) and
+normalised (within each sample, by its total). The similarity score between two
+samples is given by `1 - (d / max(d))`, where `d` is the Euclidean distance
+between two samples' vectors and `max(d)` is the maximum distance across all
+pairs of samples/pools.
+
+### Extracting positions
+
+::: {.panel-tabset group="language"}
+## R
+
+For a Seurat object `obj` from `Load10X_Spatial()` (Visium; or Visium HD,
+with e.g. `bin.size = 8` for bins or `bin.size = "polygons"` for segmented
+cells) or `LoadXenium()` (Xenium), with cell types in `obj$cell_type`:
+
+```r
+coords <- GetTissueCoordinates(obj)
+df <- data.frame(x = coords$x, y = coords$y, label = obj$cell_type[coords$cell])
+```
+
+If an object holds several images, such as more than one bin size, choose one
+with `image`, e.g. `GetTissueCoordinates(obj, image = "slice1.008um")`.
+
+## Python
+
+For Visium read with scanpy or squidpy, and for tables read with
+[spatialdata-io](https://spatialdata.scverse.org/projects/io/) (Xenium's
+`adata = sdata.tables["table"]`, or Visium HD bins' e.g.
+`adata = sdata.tables["square_008um"]`), with cell types in
+`adata.obs["cell_type"]`:
+
+```python
+x, y = adata.obsm["spatial"].T
+df = pd.DataFrame({"x": x, "y": y, "label": adata.obs["cell_type"]})
+```
+
+For Visium HD segmented cells, `sdata.tables["cell_segmentations"]` has no
+`obsm["spatial"]`, so take the centroids of the cells' outlines instead:
+
+```python
+adata = sdata.tables["cell_segmentations"]
+cells = sdata.shapes[adata.obs["region"].iloc[0]].centroid.loc[adata.obs_names]
+df = pd.DataFrame({"x": cells.x, "y": cells.y, "label": adata.obs["cell_type"]})
+```
+:::
+
+### Neighbors
+
+Under default settings, the neighbourhoods of each sample's spots/cells depend
+on technology:
+
+| Data | Neighborhood |
+|---|---|
+| Visium spots | Six immediate neighbors |
+| Visium HD bins | Four side neighbors; set `radius` to 1.5 times the bin size to add the diagonals |
+| Segmented cells (Xenium, or Visium HD with cell segmentation) | The cells surrounding them, ignoring links across gaps |
+
+Positions can be the pixel or micrometre coordinates from Space Ranger or
+Xenium outputs, as long as all samples use the same units. As the spacing is
+taken over all samples, don't mix samples in different units or from different
+technologies.
+
+You can use [`plot_neighborhoods()`](#plot_neighborhoods) to check that your
+neighborhood definition includes the spots / cells you expect.
 
 ### Warnings
 
-- Labels that are missing values (`NA` in R; `NaN` or `None` in Python) are
-  kept as a label called `"NA"`, with a warning. Files read with `read.csv()`
-  or `pd.read_csv()` turn text such as "NA" into missing values; read them with
-  `na.strings = character(0)` or `keep_default_na=False` to keep the text.
-- With `normalize = TRUE`, samples with no neighbouring spots (or, with
-  `only_transitions = TRUE`, no neighbouring spots with different labels) are
-  named in a warning, and their similarities are `NA`.
+- Labels that are missing values ([`NA`]{.lang-r}[`NaN` or `None`]{.lang-py})
+  are kept as a label called `"NA"`, with a warning. Files read with
+  [`read.csv()`]{.lang-r}[`pd.read_csv()`]{.lang-py} turn text such as "NA"
+  into missing values; read them with
+  [`na.strings = character(0)`]{.lang-r}[`keep_default_na=False`]{.lang-py} to
+  keep the text.
+- With [`normalize = TRUE`]{.lang-r}[`normalize=True`]{.lang-py}, samples with
+  no neighbouring spots (or, with
+  [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py}, no
+  neighbouring spots with different labels) are named in a warning, and their
+  similarities are [`NA`]{.lang-r}[`NaN`]{.lang-py}.
+
+## `plot_neighborhoods()` {#plot_neighborhoods}
+
+Plot example neighborhoods on your samples. Draws a patch of each sample,
+highlighting a few spots/cells (each in its own color) and their neighbors (in
+a lighter shade), to check that the neighborhood settings give the
+neighborhoods intended.
+
+::: {.panel-tabset group="language"}
+## R
+
+```r
+plot_neighborhoods(samples, x, y, samples_to_plot = NULL,
+                   neighborhood = c("auto", "radius", "knn", "delaunay"),
+                   radius = NULL, k = 6, n = 7, seed = 123)
+```
+
+## Python
+
+Needs matplotlib.
+
+```python
+plot_neighborhoods(samples, x, y, samples_to_plot=None, neighborhood="auto",
+                   radius=None, k=6, n=7, seed=123)
+```
+:::
+
+### Arguments
+
+`samples`, `x`, `y`, `neighborhood`, `radius`, `k`
+: As for `spatial_similarity()`.
+
+`samples_to_plot`
+: Names of the samples to plot. By default, plot all samples.
+
+`n`
+: Number of neighborhoods to highlight in each sample. Colors repeat after 7.
+
+`seed`
+: Random seed, so the same patches and spots/cells are plotted each time.
+  `NULL` (R) or `None` (Python) for different ones each time.
+
+### Value
+
+[Invisibly, a named list with an element per plotted sample: a list of `patch`
+(row numbers of the spots/cells drawn) and `neighborhoods` (a list of row
+numbers, the highlighted spot/cell first, then its
+neighbors).]{.lang-r}[The matplotlib `Figure`.]{.lang-py}

@@ -1,0 +1,181 @@
+---
+title: "Algorithm"
+knitr:
+  opts_chunk:
+    echo: false
+---
+
+`friendlycells` compares samples in terms of spatial relationships between
+labels. Here, we explain how the algorithm operates.
+
+Each animation first plays when it scrolls into view; use the "Replay" button
+to watch it again.
+
+```{r}
+#| label: toy-data
+#| output: asis
+# The figures' numbers come from friendlycells itself, computed when the site
+# is rendered, so they always match the package
+library(friendlycells)
+
+# A tissue section of spots on a hexagonal grid, one apart: inside a wavy
+# outline of radius about `size`, outside a hole (x, y, radius), with labels
+# from `label_of`
+section <- function(size, hole, label_of) {
+  grid <- expand.grid(col = -12:12, row = -12:12)
+  x <- grid$col + grid$row %% 2 / 2
+  y <- grid$row * sqrt(3) / 2
+  theta <- atan2(y, x)
+  edge <- size * (1 + 0.12 * sin(2 * theta + 1) + 0.08 * cos(3 * theta))
+  # 0 at the centre, 1 at the edge
+  depth <- sqrt(x^2 + y^2) / edge
+  keep <- depth < 1 & sqrt((x - hole[1])^2 + (y - hole[2])^2) > hole[3]
+  x <- x[keep]
+  y <- y[keep]
+  data.frame(
+    x = x - min(x), y = y - min(y),
+    label = label_of(x, y, depth[keep])
+  )
+}
+
+# Layers, like a cortex: A outside, then B, with C at the core
+layers <- function(x, y, depth) {
+  c("C", "B", "A")[findInterval(depth, c(0.4, 0.7)) + 1]
+}
+
+# Patches: each spot takes the label of its nearest seed
+seeds <- data.frame(
+  x = c(-4, -1, 3, 5, -3, 1, 4, -5, 0, 2),
+  y = c(3, 4, 3, -1, -1, 0, -4, -4, -4, -2),
+  label = c("A", "B", "C", "A", "C", "A", "B", "B", "C", "B")
+)
+patches <- function(x, y, depth) {
+  nearest <- mapply(function(px, py) {
+    which.min((seeds$x - px)^2 + (seeds$y - py)^2)
+  }, x, y)
+  seeds$label[nearest]
+}
+
+samples <- list(
+  "Sample 1" = section(6, c(2, 1, 1), layers),
+  "Sample 2" = section(5.3, c(1.7, 0.9, 0.9), layers),
+  "Sample 3" = section(6, c(-1, -2, 1), patches)
+)
+
+labels <- sort(unique(unlist(lapply(samples, `[[`, "label"))))
+radius <- friendlycells:::neighborhood_settings(
+  samples, list(x = "x", y = "y"), "radius", NULL
+)$radius
+per_sample <- lapply(samples, function(s) {
+  pairs <- friendlycells:::neighbor_pairs(cbind(s$x, s$y), "radius", radius)
+  counts <- friendlycells:::connection_counts(s, "x", "y", "label", labels,
+    neighborhood = "radius", radius = radius
+  )
+  list(
+    x = s$x, y = s$y, label = s$label,
+    # Each pair once, though the counts include both directions
+    pairs = pairs[pairs[, 1] < pairs[, 2], , drop = FALSE] - 1,
+    counts = matrix(counts, length(labels), byrow = TRUE)
+  )
+})
+profiles <- t(sapply(per_sample, function(s) as.vector(t(s$counts))))
+profiles <- profiles / rowSums(profiles)
+
+toy <- list(
+  labels = labels,
+  names = names(samples),
+  samples = unname(per_sample),
+  profiles = unname(profiles),
+  distance = unname(as.matrix(dist(profiles))),
+  similarity = unname(spatial_similarity(samples, "x", "y", "label",
+    neighborhood = "radius"
+  ))
+)
+cat(
+  '<script type="application/json" id="algorithm-data">',
+  jsonlite::toJSON(toy, digits = NA),
+  "</script>",
+  sep = "\n"
+)
+```
+
+## Example data
+
+Our walkthrough uses simulated tissue on a hexagonal grid with spots colored
+according to their label ("A", "B", or "C"), which we can pretend represents
+cell type. Whilst this setting most closely resembles standard-definition
+Visium, the explanations also apply to the other technologies.
+
+::: {.algorithm-figure data-figure="spots"}
+:::
+
+## 1. Finding neighbors
+
+First, neighborhood relationships between cells are computed. This process is
+covered in more detail in [Neighborhoods](neighborhoods.qmd). For our purposes
+in this example, we form a _connection_ between a spot and the six spots that
+surround it.
+
+::: {.algorithm-figure data-figure="links"}
+:::
+
+## 2. Count connections
+
+Next, we count the number of connections that link each pair of labels,
+producing a label × label table for each sample. Each connection is counted in
+both directions: an `A`–`B` connection adds one to both the `A`–`B` and `B`–`A`
+counts, and an `A`–`A` connection increments the `A`–`A` count by two.
+
+::: {.algorithm-figure data-figure="counts"}
+:::
+
+## 3. Normalization (optional)
+
+By default, `normalize` is true, which means that each sample's connection
+counts are divided by their total (i.e. they are converted to proportions
+instead of raw counts). This allows sample size (i.e. number of occupied spots
+/ cells) to be controlled: two samples with similar spatial characteristics but
+of different sizes will still have a high similarity score.
+
+::: {.algorithm-figure data-figure="profile"}
+:::
+
+## 4. Calculate similarities
+
+The dissimilarity between two samples is calculated as the Euclidean distance
+between their connection counts/proportions. We normalize distances by dividing
+each by the largest.
+
+::: {.algorithm-figure data-figure="compare"}
+:::
+
+Finally, we convert distances to similarity scores by subtracting each from 1:
+
+$$s_{ij} = 1 - \frac{d_{ij}}{\max d}$$
+
+
+A similarity of 1 means that two samples have identical profiles, whilst 0
+corresponds to the least similar pair.
+
+::: {.algorithm-figure data-figure="similarity"}
+:::
+
+## Options
+
+### Only transitions
+
+Setting `only_transitions` to true drops connections between spots/cells with
+the same label. This means that similarity scores only represent
+characteristics of borders between labels.
+
+::: {.algorithm-figure data-figure="transitions"}
+:::
+
+### Pools
+
+`pools` groups samples, for example replicates, and sums their connection
+counts before distances are calculated, effectively treating each pool as a
+single sample.
+
+::: {.algorithm-figure data-figure="pools"}
+:::

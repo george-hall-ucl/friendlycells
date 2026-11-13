@@ -2,6 +2,6 @@
 __pycache__/
 docs/
 .DS_Store
-python/friendlyspots.egg-info
+python/friendlycells.egg-info
 site/_site/
 site/.quarto/

@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "friendlyspots"
+name = "friendlycells"
 version = "0.1.0"
 description = "Spatial similarity of spatial transcriptomics samples"
 readme = "README.md"
@@ -15,14 +15,24 @@ maintainers = [{ name = "George Hall", email = "george.hall@ucl.ac.uk" }]
 requires-python = ">=3.9"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
-dependencies = ["numpy", "pandas"]
+dependencies = ["numpy", "pandas", "scipy"]
+
+[project.optional-dependencies]
+plot = ["matplotlib"]
 
 [project.urls]
-Homepage = "https://github.com/george-hall-ucl/friendlyspots"
-Issues = "https://github.com/george-hall-ucl/friendlyspots/issues"
+Homepage = "https://github.com/george-hall-ucl/friendlycells"
+Issues = "https://github.com/george-hall-ucl/friendlycells/issues"
 
 [tool.setuptools]
-packages = ["friendlyspots"]
+packages = ["friendlycells"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.pylint.main]
+extension-pkg-allow-list = ["scipy"]
+generated-members = ["simplices"]
+max-args = 10
+max-positional-arguments = 10
+max-locals = 16

@@ -1,31 +1,42 @@
 # Render locally with `quarto render` from site/, with the R package installed
-# and RETICULATE_PYTHON set to a Python that has friendlyspots, squidpy,
+# and RETICULATE_PYTHON set to a Python that has friendlycells, squidpy,
 # matplotlib and seaborn. Commit _freeze/ so CI can publish without running
 # any code.
 project:
   type: website
   resources:
     - spots.js
+    - lang.js
+    - selector.js
+    - code-links.js
+    - algorithm.js
 
 execute:
   freeze: auto
 
 website:
-  title: "friendlyspots"
-  site-url: https://george-hall-ucl.github.io/friendlyspots/
-  repo-url: https://github.com/george-hall-ucl/friendlyspots
+  title: "friendlycells"
+  site-url: https://george-hall-ucl.github.io/friendlycells/
+  repo-url: https://github.com/george-hall-ucl/friendlycells
   favicon: images/logo.png
   navbar:
+    pinned: true
     logo: images/logo.png
     left:
       - href: index.qmd
         text: Home
+      - vignette.qmd
+      - algorithm.qmd
+      - neighborhoods.qmd
       - reference.qmd
     right:
       - icon: github
-        href: https://github.com/george-hall-ucl/friendlyspots
+        href: https://github.com/george-hall-ucl/friendlycells
   page-footer:
     center: "Copyright (C) 2026 University College London. Licensed under GPL-3.0-or-later."
+
+filters:
+  - link-functions.lua
 
 format:
   html:
@@ -35,4 +46,9 @@ format:
     toc: true
     css: styles.css
     include-after-body:
-      text: <script src="spots.js"></script>
+      text: |
+        <script src="spots.js"></script>
+        <script src="lang.js"></script>
+        <script src="selector.js"></script>
+        <script src="code-links.js"></script>
+        <script src="algorithm.js"></script>

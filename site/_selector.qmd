@@ -1,0 +1,16 @@
+```{=html}
+<div class="selector">
+  <div class="selector-label">Language</div>
+  <div class="selector-options" data-choice="lang" role="group" aria-label="Language">
+    <button type="button" data-value="r">R</button>
+    <button type="button" data-value="py">Python</button>
+  </div>
+  <div class="selector-label">Data</div>
+  <div class="selector-options" data-choice="tech" role="group" aria-label="Data">
+    <button type="button" data-value="visium">Visium</button>
+    <button type="button" data-value="hd-bins">Visium HD (bins)</button>
+    <button type="button" data-value="hd-cells">Visium HD (cells)</button>
+    <button type="button" data-value="xenium">Xenium</button>
+  </div>
+</div>
+```

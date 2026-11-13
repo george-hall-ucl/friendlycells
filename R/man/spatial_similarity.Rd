@@ -6,16 +6,28 @@
 \usage{
 spatial_similarity(
   samples,
+  x,
+  y,
+  labels,
   normalize = TRUE,
   pools = NULL,
-  only_transitions = FALSE
+  only_transitions = FALSE,
+  neighborhood = c("auto", "radius", "knn", "delaunay"),
+  radius = NULL,
+  k = 6
 )
 }
 \arguments{
-\item{samples}{Named list of data frames, one per sample, with columns
-\code{array_row}, \code{array_col} (hexagonal grid array coordinates) and \code{label}.}
+\item{samples}{Named list of data frames, one per sample, with a row per
+spot/cell.}
 
-\item{normalize}{Divide each sample's connection counts by their total.}
+\item{x, y}{Names of the columns holding the positions of spots/cells, in any
+unit (e.g. pixels or micrometres) consistent between samples.}
+
+\item{labels}{Name of the column holding the labels (e.g. cell types).}
+
+\item{normalize}{Divide each sample's connection counts by their total to
+control for sample size.}
 
 \item{pools}{Optional named list mapping pool names to sample names;
 connection counts are summed within each pool.}
@@ -23,23 +35,67 @@ connection counts are summed within each pool.}
 \item{only_transitions}{If \code{TRUE}, only count connections between spots with
 distinct labels (i.e. borders); does not count connections between spots
 with the same label.}
+
+\item{neighborhood}{Definition of the neighbourhood of each spot/cell:
+\code{"radius"} selects all within \code{radius}; \code{"knn"} selects the \code{k} nearest
+(symmetric: both are included in each other's neighborhood if either is
+among the other's nearest); or \code{"delaunay"} selects those surrounding it by
+Delaunay triangulation, dropping links longer than \code{radius}. The default,
+\code{"auto"}, uses \code{"radius"} if the positions lie on a grid (at least 75\% of
+nearest-neighbor distances within 10\% of their median) and \code{"delaunay"}
+otherwise, with a message saying which was used.}
+
+\item{radius}{Neighborhood radius for \code{"radius"}, or maximum link length for
+\code{"delaunay"}, in the units of the positions. By default, set from the
+spacing of the data: set to the median distance from each spot/cell to its
+nearest neighbor over all samples, multiplied by 1.2 for \code{"radius"} or 3
+for \code{"delaunay"}. Used to make neighborhoods wider or narrower.}
+
+\item{k}{Number of nearest neighbors for \code{neighborhood = "knn"}. Ties are
+broken arbitrarily.}
 }
 \value{
 Symmetric similarity matrix with values in [0, 1], or \code{NA} for
 samples with no neighboring spots when \code{normalize = TRUE}.
 }
 \description{
-Spatial similarity between spatial transcriptomics samples
+Computes spatial similarity between spatial transcriptomics samples by
+counting connections between neighboring spots/cells.
+}
+\details{
+Under default settings, the neighbourhoods of each sample's
+spots/cells depend on technology:
+\itemize{
+\item Visium spots: six immediate neighbors.
+\item Visium HD bins: four side neighbors. Set \code{radius} to 1.5 times the
+bin size to add the diagonals.
+\item Segmented cells (Xenium, or Visium HD with cell segmentation): the cells
+surrounding them, ignoring links across gaps.
+}
+
+Positions can be the pixel or micrometre coordinates from Space Ranger or
+Xenium outputs, as long as all samples use the same units. As the spacing
+is taken over all samples, don't mix samples in different units or from
+different technologies.
 }
 \examples{
 samples <- list(
-  a = data.frame(array_row = c(0, 0, 1), array_col = c(0, 2, 1),
-                 label = c("x", "y", "x")),
-  b = data.frame(array_row = c(0, 0, 0), array_col = c(0, 2, 4),
-                 label = c("x", "x", "y")),
-  c = data.frame(array_row = c(0, 0), array_col = c(0, 2),
-                 label = c("y", "y"))
+  a = data.frame(
+    x = c(0, 100, 50), y = c(0, 0, 86.6),
+    label = c("x", "y", "x")
+  ),
+  b = data.frame(
+    x = c(0, 100, 200), y = c(0, 0, 0),
+    label = c("x", "x", "y")
+  ),
+  c = data.frame(
+    x = c(0, 100), y = c(0, 0),
+    label = c("y", "y")
+  )
 )
-spatial_similarity(samples)
-spatial_similarity(samples, pools = list(ab = c("a", "b"), c = "c"))
+spatial_similarity(samples, "x", "y", "label")
+spatial_similarity(samples, "x", "y", "label",
+  pools = list(ab = c("a", "b"), c = "c")
+)
+spatial_similarity(samples, "x", "y", "label", neighborhood = "delaunay")
 }
