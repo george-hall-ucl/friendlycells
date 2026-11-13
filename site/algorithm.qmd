@@ -131,11 +131,15 @@ counts, and an `A`–`A` connection increments the `A`–`A` count by two.
 
 ## 3. Normalization (optional)
 
-By default, `normalize` is true, which means that each sample's connection
-counts are divided by their total (i.e. they are converted to proportions
-instead of raw counts). This allows sample size (i.e. number of occupied spots
-/ cells) to be controlled: two samples with similar spatial characteristics but
-of different sizes will still have a high similarity score.
+By default, `sample_normalize` is true, which means that each sample's
+connection counts are divided by their total (i.e. they are converted to
+proportions instead of raw counts). This allows sample size (i.e. number of
+occupied spots / cells) to be controlled: two samples with similar spatial
+characteristics but of different sizes will still have a high similarity score.
+
+Alternatively, `label_normalize` controls for the size of each label instead,
+turning each label's counts into the proportions of its neighbors' labels (see
+[Reference](reference.qmd)).
 
 ::: {.algorithm-figure data-figure="profile"}
 :::

@@ -9,7 +9,8 @@ spatial_similarity(
   x,
   y,
   labels,
-  normalize = TRUE,
+  sample_normalize = TRUE,
+  label_normalize = FALSE,
   pools = NULL,
   only_transitions = FALSE,
   neighborhood = c("auto", "radius", "knn", "delaunay"),
@@ -26,8 +27,16 @@ unit (e.g. pixels or micrometres) consistent between samples.}
 
 \item{labels}{Name of the column holding the labels (e.g. cell types).}
 
-\item{normalize}{Divide each sample's connection counts by their total to
-control for sample size.}
+\item{sample_normalize}{Divide each sample's connection counts by their
+total to control for sample size.}
+
+\item{label_normalize}{Control for the size of each label: add one
+connection of every label to itself, divide each count by the square root
+of the two labels' connections to themselves (so each label's connections
+to itself become 1), then divide each label's counts by their sum (its
+degree), so each label's counts become the proportions of its neighbors'
+labels, as in one step of a random walk. Applied after pooling. Use
+instead of \code{sample_normalize}: set \code{sample_normalize = FALSE}.}
 
 \item{pools}{Optional named list mapping pool names to sample names;
 connection counts are summed within each pool.}
@@ -56,7 +65,7 @@ broken arbitrarily.}
 }
 \value{
 Symmetric similarity matrix with values in [0, 1], or \code{NA} for
-samples with no neighboring spots when \code{normalize = TRUE}.
+samples with no neighboring spots when \code{sample_normalize = TRUE}.
 }
 \description{
 Computes spatial similarity between spatial transcriptomics samples by
