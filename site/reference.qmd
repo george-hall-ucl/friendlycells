@@ -10,7 +10,7 @@ Computes spatial similarity between spatial transcriptomics samples by counting 
 ## R
 
 ```r
-spatial_similarity(samples, normalize = TRUE, pools = NULL,
+spatial_similarity(samples, x, y, labels, normalize = TRUE, pools = NULL,
                    only_transitions = FALSE,
                    neighborhood = c("auto", "radius", "knn", "delaunay"),
                    radius = NULL, k = 6)
@@ -19,8 +19,8 @@ spatial_similarity(samples, normalize = TRUE, pools = NULL,
 ## Python
 
 ```python
-spatial_similarity(samples, normalize=True, pools=None, only_transitions=False,
-                   neighborhood="auto", radius=None, k=6)
+spatial_similarity(samples, x, y, labels, normalize=True, pools=None,
+                   only_transitions=False, neighborhood="auto", radius=None, k=6)
 ```
 :::
 
@@ -28,9 +28,14 @@ spatial_similarity(samples, normalize=True, pools=None, only_transitions=False,
 
 `samples`
 : [Named list]{.lang-r}[Dict]{.lang-py} of [data frames]{.lang-r}[DataFrames]{.lang-py},
-  one per sample, with columns: `x`, `y` (positions of spots/cells in any unit,
-  e.g. pixels or micrometres, consistent between samples); `label` (e.g. cell
-  type).
+  one per sample, with a row per spot/cell.
+
+`x`, `y`
+: Names of the columns holding the positions of spots/cells, in any unit (e.g.
+  pixels or micrometres) consistent between samples.
+
+`labels`
+: Name of the column holding the labels (e.g. cell types).
 
 `normalize`
 : Divide each sample's connection counts by their total to control for sample
@@ -59,7 +64,7 @@ spatial_similarity(samples, normalize=True, pools=None, only_transitions=False,
 
 `radius`
 : Neighborhood radius for `"radius"`, or maximum link length for
-  `"delaunay"`, in the units of `x` and `y`. By default, set from the spacing
+  `"delaunay"`, in the units of the positions. By default, set from the spacing
   of the data: set to the median distance from each spot/cell to its nearest
   neighbor over all samples, multiplied by 1.2 for `"radius"` or 3 for
   `"delaunay"`. Used to make neighborhoods wider or narrower.
@@ -175,7 +180,7 @@ neighborhoods intended.
 ## R
 
 ```r
-plot_neighborhoods(samples, samples_to_plot = NULL,
+plot_neighborhoods(samples, x, y, samples_to_plot = NULL,
                    neighborhood = c("auto", "radius", "knn", "delaunay"),
                    radius = NULL, k = 6, n = 7, seed = 123)
 ```
@@ -185,14 +190,14 @@ plot_neighborhoods(samples, samples_to_plot = NULL,
 Needs matplotlib.
 
 ```python
-plot_neighborhoods(samples, samples_to_plot=None, neighborhood="auto",
+plot_neighborhoods(samples, x, y, samples_to_plot=None, neighborhood="auto",
                    radius=None, k=6, n=7, seed=123)
 ```
 :::
 
 ### Arguments
 
-`samples`, `neighborhood`, `radius`, `k`
+`samples`, `x`, `y`, `neighborhood`, `radius`, `k`
 : As for `spatial_similarity()`.
 
 `samples_to_plot`

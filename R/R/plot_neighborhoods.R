@@ -18,9 +18,9 @@
 #' @examples
 #' grid <- expand.grid(x = 1:40, y = 1:40)
 #' samples <- list(a = data.frame(grid, label = "x"))
-#' plot_neighborhoods(samples)
+#' plot_neighborhoods(samples, "x", "y")
 #' @export
-plot_neighborhoods <- function(samples, samples_to_plot = NULL,
+plot_neighborhoods <- function(samples, x, y, samples_to_plot = NULL,
                                neighborhood = c(
                                  "auto", "radius", "knn",
                                  "delaunay"
@@ -44,7 +44,9 @@ plot_neighborhoods <- function(samples, samples_to_plot = NULL,
     )
     set.seed(seed)
   }
-  settings <- neighborhood_settings(samples, match.arg(neighborhood), radius)
+  settings <- neighborhood_settings(
+    samples, list(x = x, y = y), match.arg(neighborhood), radius
+  )
   cols <- ceiling(sqrt(length(samples_to_plot)))
   old_par <- graphics::par(
     mfrow = c(ceiling(length(samples_to_plot) / cols), cols),
@@ -58,7 +60,7 @@ plot_neighborhoods <- function(samples, samples_to_plot = NULL,
     maxColorValue = 255
   )
   result <- lapply(stats::setNames(nm = samples_to_plot), function(name) {
-    xy <- cbind(samples[[name]]$x, samples[[name]]$y)
+    xy <- cbind(samples[[name]][[x]], samples[[name]][[y]])
     hoods <- example_neighborhoods(
       xy, settings$neighborhood, settings$radius, k, n
     )
@@ -75,7 +77,7 @@ plot_neighborhoods <- function(samples, samples_to_plot = NULL,
     # Circles in data units, so spots/cells keep their spacing at any size
     spacing <- stats::median(nn_distances(list(data.frame(
       x = patch[, 1], y = patch[, 2]
-    ))))
+    )), "x", "y"))
     if (is.na(spacing)) spacing <- 1
     graphics::symbols(patch,
       circles = rep(0.45 * spacing, nrow(patch)),
