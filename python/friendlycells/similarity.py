@@ -13,7 +13,8 @@ def spatial_similarity(
     x,
     y,
     labels,
-    normalize=True,
+    sample_normalize=True,
+    label_normalize=False,
     pools=None,
     only_transitions=False,
     neighborhood="auto",
@@ -27,8 +28,15 @@ def spatial_similarity(
     x, y: names of the columns holding the positions of spots/cells, in any
         unit (e.g. pixels or micrometres) consistent between samples.
     labels: name of the column holding the labels (e.g. cell types).
-    normalize: divide each sample's connection counts by their total to
-        control for sample size.
+    sample_normalize: divide each sample's connection counts by their total
+        to control for sample size.
+    label_normalize: control for the size of each label: add one connection
+        of every label to itself, divide each count by the square root of the
+        two labels' connections to themselves (so each label's connections to
+        itself become 1), then divide each label's counts by their sum (its
+        degree), so each label's counts become the proportions of its
+        neighbors' labels, as in one step of a random walk. Applied after
+        pooling. Use instead of sample_normalize: set sample_normalize=False.
     pools: optional dict mapping pool names to lists of sample names;
         connection counts are summed within each pool.
     only_transitions: if True, only count connections between spots with
@@ -50,7 +58,7 @@ def spatial_similarity(
     k: number of nearest neighbors for neighborhood="knn". Ties are broken
         arbitrarily.
     Returns a symmetric DataFrame of similarities in [0, 1], or NaN for
-    samples with no neighboring spots when normalize=True.
+    samples with no neighboring spots when sample_normalize=True.
 
     Under default settings, the neighbourhoods of each sample's spots/cells
     depend on technology:
@@ -65,6 +73,11 @@ def spatial_similarity(
     is taken over all samples, don't mix samples in different units or from
     different technologies.
     """
+    if sample_normalize and label_normalize:
+        raise ValueError(
+            "Use either sample_normalize or label_normalize, not both: "
+            "set sample_normalize=False to use label_normalize."
+        )
     neighborhood, radius = _neighborhood_settings(
         samples, {"x": x, "y": y, "labels": labels}, neighborhood, radius
     )
@@ -91,7 +104,9 @@ def spatial_similarity(
         counts = pd.DataFrame(
             {name: counts.loc[members].sum() for name, members in pools.items()}
         ).T
-    if normalize:
+    if label_normalize:
+        counts = _label_normalize(counts, len(all_labels))
+    if sample_normalize:
         totals = counts.sum(axis=1)
         if (totals == 0).any():
             warnings.warn(
@@ -112,6 +127,18 @@ def spatial_similarity(
     if d_max > 0:
         d = d / d_max
     return pd.DataFrame(1 - d, index=counts.index, columns=counts.index)
+
+
+def _label_normalize(counts, n):
+    """Each sample's n x n table, with a self-connection added to each label,
+    scaled by its labels' self-connections, then by each label's degree."""
+    m = counts.to_numpy(dtype=float).reshape(-1, n, n) + np.eye(n)
+    self_links = np.sqrt(np.diagonal(m, axis1=1, axis2=2))
+    m = m / (self_links[:, :, None] * self_links[:, None, :])
+    m = m / m.sum(axis=2, keepdims=True)
+    return pd.DataFrame(
+        m.reshape(len(counts), -1), index=counts.index, columns=counts.columns
+    )
 
 
 def _neighborhood_settings(samples, columns, neighborhood, radius):

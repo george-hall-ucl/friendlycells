@@ -8,8 +8,15 @@
 #' @param x,y Names of the columns holding the positions of spots/cells, in any
 #'   unit (e.g. pixels or micrometres) consistent between samples.
 #' @param labels Name of the column holding the labels (e.g. cell types).
-#' @param normalize Divide each sample's connection counts by their total to
-#'   control for sample size.
+#' @param sample_normalize Divide each sample's connection counts by their
+#'   total to control for sample size.
+#' @param label_normalize Control for the size of each label: add one
+#'   connection of every label to itself, divide each count by the square root
+#'   of the two labels' connections to themselves (so each label's connections
+#'   to itself become 1), then divide each label's counts by their sum (its
+#'   degree), so each label's counts become the proportions of its neighbors'
+#'   labels, as in one step of a random walk. Applied after pooling. Use
+#'   instead of `sample_normalize`: set `sample_normalize = FALSE`.
 #' @param pools Optional named list mapping pool names to sample names;
 #'   connection counts are summed within each pool.
 #' @param only_transitions If `TRUE`, only count connections between spots with
@@ -43,7 +50,7 @@
 #'   is taken over all samples, don't mix samples in different units or from
 #'   different technologies.
 #' @return Symmetric similarity matrix with values in \[0, 1\], or `NA` for
-#'   samples with no neighboring spots when `normalize = TRUE`.
+#'   samples with no neighboring spots when `sample_normalize = TRUE`.
 #' @examples
 #' samples <- list(
 #'   a = data.frame(
@@ -66,14 +73,21 @@
 #' spatial_similarity(samples, "x", "y", "label", neighborhood = "delaunay")
 #' @importFrom stats dist median
 #' @export
-spatial_similarity <- function(samples, x, y, labels, normalize = TRUE,
-                               pools = NULL,
+spatial_similarity <- function(samples, x, y, labels,
+                               sample_normalize = TRUE,
+                               label_normalize = FALSE, pools = NULL,
                                only_transitions = FALSE,
                                neighborhood = c(
                                  "auto", "radius", "knn",
                                  "delaunay"
                                ),
                                radius = NULL, k = 6) {
+  if (sample_normalize && label_normalize) {
+    stop(
+      "Use either sample_normalize or label_normalize, not both: ",
+      "set sample_normalize = FALSE to use label_normalize."
+    )
+  }
   settings <- neighborhood_settings(
     samples, list(x = x, y = y, labels = labels), match.arg(neighborhood),
     radius
@@ -103,7 +117,15 @@ spatial_similarity <- function(samples, x, y, labels, normalize = TRUE,
       colSums(counts[p, , drop = FALSE])
     }))
   }
-  if (normalize) {
+  if (label_normalize) {
+    n <- length(all_labels)
+    counts <- t(apply(counts, 1, function(v) {
+      m <- matrix(v, n, n, byrow = TRUE) + diag(n)
+      m <- m / sqrt(outer(diag(m), diag(m)))
+      as.vector(t(m / rowSums(m)))
+    }))
+  }
+  if (sample_normalize) {
     empty <- rowSums(counts) == 0
     if (any(empty)) {
       warning(

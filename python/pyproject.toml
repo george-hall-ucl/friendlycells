@@ -33,6 +33,6 @@ pythonpath = ["."]
 [tool.pylint.main]
 extension-pkg-allow-list = ["scipy"]
 generated-members = ["simplices"]
-max-args = 10
-max-positional-arguments = 10
+max-args = 11
+max-positional-arguments = 11
 max-locals = 16
