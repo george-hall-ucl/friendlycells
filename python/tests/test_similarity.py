@@ -36,14 +36,14 @@ def assert_sim(sim, ab, ac, bc):
 
 def test_neighbor_counts():
     """Hexagonal neighbor counts give similarity 1 - d / max(d)."""
-    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", sample_normalize=False)
     assert_sim(sim, 1 - np.sqrt(2) / 4, 0, 1 - np.sqrt(10) / 4)
 
 
 def test_names_in_input_order():
     """Output row/column names respect input sample order."""
     sim = spatial_similarity(
-        dict(reversed(SAMPLES.items())), "x", "y", "label", normalize=False
+        dict(reversed(SAMPLES.items())), "x", "y", "label", sample_normalize=False
     )
     assert list(sim.index) == ["C", "B", "A"]
 
@@ -56,18 +56,18 @@ def test_identical_samples():
 
 def test_categorical_labels():
     """Categorical labels yield the same output as string labels."""
-    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", sample_normalize=False)
     categories = {
         n: s.assign(label=s["label"].astype("category")) for n, s in SAMPLES.items()
     }
     pd.testing.assert_frame_equal(
-        spatial_similarity(categories, "x", "y", "label", normalize=False), sim
+        spatial_similarity(categories, "x", "y", "label", sample_normalize=False), sim
     )
 
 
 def test_missing_labels():
     """Labels read as missing (e.g. NA, nan, None) become one label called 'NA', with a warning."""
-    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False)
+    sim = spatial_similarity(SAMPLES, "x", "y", "label", sample_normalize=False)
     # pd.read_csv() turns labels written as NA, nan, None, etc. into NaN
     csv = pd.read_csv(
         io.StringIO(
@@ -80,7 +80,8 @@ def test_missing_labels():
     from_file = {name: s.drop(columns="sample") for name, s in csv.groupby("sample")}
     with pytest.warns(UserWarning, match="treated as a label called 'NA'"):
         pd.testing.assert_frame_equal(
-            spatial_similarity(from_file, "x", "y", "label", normalize=False), sim
+            spatial_similarity(from_file, "x", "y", "label", sample_normalize=False),
+            sim,
         )
 
 
@@ -89,6 +90,29 @@ def test_normalize():
     dmax = np.sqrt(11 / 8)
     sim = spatial_similarity(SAMPLES, "x", "y", "label")
     assert_sim(sim, 1 - (np.sqrt(6) / 12) / dmax, 1 - np.sqrt(4 / 3) / dmax, 0)
+
+
+def test_label_normalize():
+    """label_normalize gives log2 of (observed + 1) / (expected + 1)."""
+
+    # A's counts (a-a 2, a-b 2, b-b 0) have degrees 4 and 2 and 2m = 6, so
+    # expect 8/3, 4/3 and 2/3, giving ratios 9/11, 9/7 and 3/5; B's (2, 1, 0)
+    # give 12/13, 8/7 and 4/5; C's (0, 0, 2) are all as expected, so log2 0
+    def dist(aa, ab, bb):
+        return np.sqrt(np.log2(aa) ** 2 + 2 * np.log2(ab) ** 2 + np.log2(bb) ** 2)
+
+    dmax = dist(9 / 11, 9 / 7, 3 / 5)
+    sim = spatial_similarity(
+        SAMPLES, "x", "y", "label", sample_normalize=False, label_normalize=True
+    )
+    assert_sim(
+        sim,
+        1 - dist(39 / 44, 9 / 8, 3 / 4) / dmax,
+        0,
+        1 - dist(12 / 13, 8 / 7, 4 / 5) / dmax,
+    )
+    with pytest.raises(ValueError, match="not both"):
+        spatial_similarity(SAMPLES, "x", "y", "label", label_normalize=True)
 
 
 def test_no_connections_with_normalize():
@@ -107,7 +131,9 @@ def test_no_connections_with_normalize():
 def test_pools():
     """Pools sum counts of their samples."""
     pools = {"p1": ["A", "B"], "p2": ["C"], "p3": ["A"]}
-    sim = spatial_similarity(SAMPLES, "x", "y", "label", normalize=False, pools=pools)
+    sim = spatial_similarity(
+        SAMPLES, "x", "y", "label", sample_normalize=False, pools=pools
+    )
     assert list(sim.index) == ["p1", "p2", "p3"]
     assert_sim(sim, 0, 1 - np.sqrt(6) / np.sqrt(38), 1 - 4 / np.sqrt(38))
 
@@ -146,7 +172,7 @@ def test_pig_esophagus_paper():
 def test_only_transitions():
     """only_transitions drops same-label contacts, so only borders count."""
     sim = spatial_similarity(
-        SAMPLES, "x", "y", "label", normalize=False, only_transitions=True
+        SAMPLES, "x", "y", "label", sample_normalize=False, only_transitions=True
     )
     assert_sim(sim, 0.5, 0, 0.5)
 
@@ -173,7 +199,13 @@ def test_only_transitions_with_pools():
     """Pools sum the border counts of their samples."""
     pools = {"p1": ["A", "B"], "p2": ["C"], "p3": ["A"]}
     sim = spatial_similarity(
-        SAMPLES, "x", "y", "label", normalize=False, pools=pools, only_transitions=True
+        SAMPLES,
+        "x",
+        "y",
+        "label",
+        sample_normalize=False,
+        pools=pools,
+        only_transitions=True,
     )
     assert_sim(sim, 0, 2 / 3, 1 / 3)
 
