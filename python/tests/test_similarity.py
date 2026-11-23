@@ -93,19 +93,24 @@ def test_normalize():
 
 
 def test_label_normalize():
-    """label_normalize gives log2 of observed / expected counts, d_i d_j / 2m."""
+    """label_normalize gives log2 of (observed + 1) / (expected + 1)."""
 
-    # A's counts (a-a 2, a-b 2, b-b 0) have degrees 4 and 2 and 2m = 6, so a-a
-    # is 2 * 6 / 16 = 3/4 and a-b 3/2; B's (2, 1, 0) give 8/9 and 4/3; C's
-    # only b-b gives 1. log2 of 1, and of the 0s, is 0, so C is all 0
-    def dist(aa, ab):
-        return np.sqrt(np.log2(aa) ** 2 + 2 * np.log2(ab) ** 2)
+    # A's counts (a-a 2, a-b 2, b-b 0) have degrees 4 and 2 and 2m = 6, so
+    # expect 8/3, 4/3 and 2/3, giving ratios 9/11, 9/7 and 3/5; B's (2, 1, 0)
+    # give 12/13, 8/7 and 4/5; C's (0, 0, 2) are all as expected, so log2 0
+    def dist(aa, ab, bb):
+        return np.sqrt(np.log2(aa) ** 2 + 2 * np.log2(ab) ** 2 + np.log2(bb) ** 2)
 
-    dmax = dist(3 / 4, 3 / 2)
+    dmax = dist(9 / 11, 9 / 7, 3 / 5)
     sim = spatial_similarity(
         SAMPLES, "x", "y", "label", sample_normalize=False, label_normalize=True
     )
-    assert_sim(sim, 1 - dist(27 / 32, 9 / 8) / dmax, 0, 1 - dist(8 / 9, 4 / 3) / dmax)
+    assert_sim(
+        sim,
+        1 - dist(39 / 44, 9 / 8, 3 / 4) / dmax,
+        0,
+        1 - dist(12 / 13, 8 / 7, 4 / 5) / dmax,
+    )
     with pytest.raises(ValueError, match="not both"):
         spatial_similarity(SAMPLES, "x", "y", "label", label_normalize=True)
 

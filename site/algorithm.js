@@ -116,9 +116,10 @@
       const value = text(g, j * cell + cell / 2, i * cell + cell / 2, "", cls ? { class: cls } : {});
       return { rect, value };
     }));
-    return (i, j, fill, label) => {
+    return (i, j, fill, label, negative = false) => {
       const { rect, value } = cells[i][j];
       rect.style.fillOpacity = 0.85 * fill;
+      rect.classList.toggle("algo-cell-neg", negative);
       value.textContent = label;
       value.classList.toggle("algo-on-dark", fill > 0.55);
     };
@@ -614,6 +615,51 @@
         }
       }
     },
+
+    // label_normalize: counts against those expected at random, given each
+    // label's total connections, as log2((A + 1) / (E + 1))
+    async "label-normalize"(svg, run) {
+      svg.setAttribute("viewBox", "0 0 640 240");
+      const { counts } = data.samples[0];
+      const degree = counts.map(sum);
+      const total = sum(degree);
+      const expected = degree.map((di) => degree.map((dj) => (di * dj) / total));
+      const ratio = counts.map((row, i) => row.map((v, j) => Math.log2((v + 1) / (expected[i][j] + 1))));
+      const max = Math.max(...counts.flat());
+      const maxRatio = Math.max(...ratio.flat().map(Math.abs));
+      const cell = 40;
+      const top = 80;
+      const side = labels.length * cell;
+      const below = top + side + 20;
+      const setObserved = drawTable(svg, 50, top, cell, "Observed, A");
+      const degrees = labels.map((_, i) => text(svg, 50 + side + 10, top + i * cell + cell / 2,
+        `d = ${degree[i]}`, { "text-anchor": "start", class: "algo-small" }));
+      text(svg, 50 + side / 2, below, `${data.names[0]}, 2m = ${total}`, { class: "algo-small" });
+      const setExpected = drawTable(svg, 270, top, cell, "Expected, E");
+      text(svg, 270 + side / 2, below, "dᵢ × dⱼ / 2m", { class: "algo-small" });
+      const setRatio = drawTable(svg, 490, top, cell, "Normalized");
+      text(svg, 490 + side / 2, below, "log₂((A + 1) / (E + 1))", { class: "algo-small" });
+      const cells = labels.flatMap((_, i) => labels.map((_, j) => [i, j]));
+      for (const [i, j] of cells) {
+        setObserved(i, j, counts[i][j] / max, String(counts[i][j]));
+        setExpected(i, j, 0, "");
+        setRatio(i, j, 0, "");
+      }
+      await run.pause(800);
+      // Each expected count, from its two labels' totals
+      for (const [i, j] of cells) {
+        for (const k of [i, j]) degrees[k].classList.add("algo-emphasis");
+        setExpected(i, j, expected[i][j] / max, expected[i][j].toFixed(1));
+        await run.pause(400);
+        for (const k of [i, j]) degrees[k].classList.remove("algo-emphasis");
+      }
+      await run.pause(400);
+      for (const [i, j] of cells) {
+        const r = ratio[i][j];
+        setRatio(i, j, Math.abs(r) / maxRatio, r.toFixed(2).replace("-", "−"), r < 0);
+        await run.pause(200);
+      }
+    },
   };
 
   const descriptions = {
@@ -625,6 +671,7 @@
     similarity: "The distances, divided by the largest and subtracted from 1, filling a similarity matrix.",
     transitions: "Links within a label dropped, zeroing the table's diagonal.",
     pools: "Two samples' tables summed into one pool.",
+    "label-normalize": "A sample's counts, the counts expected at random from each label's total connections, and the log2 ratio of the two.",
   };
 
   for (const container of document.querySelectorAll(".algorithm-figure")) {

@@ -30,15 +30,22 @@ def spatial_similarity(
     labels: name of the column holding the labels (e.g. cell types).
     sample_normalize: divide each sample's connection counts by their total
         to control for sample size.
-    label_normalize: control for the size of each label (#NEW): divide each
-        count by the count expected if connections were made at random given
-        each label's degree (its total connections, including to itself), as
-        in the configuration model: observed / expected = A_ij * 2m / (d_i
-        d_j), where 2m is the sum of all counts. 1 means as often as chance,
-        above 1 enriched, below 1 avoided; entries of labels absent from a
-        sample are 0. Then log2 (#NEW), with log2(0) set to 0. Applied after
-        pooling. Use instead of sample_normalize:
-        set sample_normalize=False.
+    label_normalize: control for the prevalence of each label by normalizing
+        connection counts with respect to their expected values if spot/cell
+        connections were randomised (follows the configuration model from
+        graph theory, a permutation-free version of squidpy's
+        gr.nhood_enrichment). If the expected number of connections between
+        labels i and j under this randomisation is E_ij = d_i d_j / 2m (where
+        d_i is the number of connections originating at label i and
+        2m = sum_i d_i is the total number of connections, counted from both
+        originating labels), then the observed count A_ij is normalized as
+        log2((A_ij + 1) / (E_ij + 1)). Following normalization, 0 means a
+        connection was observed as often as expected, above 0 means it was
+        observed more often than this and below 0 means less often. The
+        pseudocount of 1 ensures normalized counts between labels that never
+        neighbor one another remain finite and gives labels absent from a
+        sample 0. This step is applied after pooling. Mutually exclusive with
+        sample_normalize.
     pools: optional dict mapping pool names to lists of sample names;
         connection counts are summed within each pool.
     only_transitions: if True, only count connections between spots with
@@ -132,16 +139,15 @@ def spatial_similarity(
 
 
 def _label_normalize(counts, n):
-    """Each sample's n x n table as observed / expected counts, where the
-    expected count between labels i and j is d_i * d_j / 2m."""
+    """Each sample's n x n table as log2((observed + 1) / (expected + 1)),
+    where the expected count between labels i and j is d_i * d_j / 2m."""
     m = counts.to_numpy(dtype=float).reshape(-1, n, n)
     degree = m.sum(axis=2)
-    expected = degree[:, :, None] * degree[:, None, :]
-    total = degree.sum(axis=1)[:, None, None]
-    # absent labels have no expected count; set to 0
-    m = np.divide(m * total, expected, out=np.zeros_like(m), where=expected > 0)
-    # log2 so 2x and 0.5x are equally far from chance; log2(0) set to 0 (the same as chance)
-    m = np.log2(m, out=np.zeros_like(m), where=m > 0)
+    total = np.maximum(degree.sum(axis=1), 1)[:, None, None]
+    expected = degree[:, :, None] * degree[:, None, :] / total
+    # log2 so 2x and 0.5x are equally far from chance; the pseudocount keeps
+    # pairs that never touch finite
+    m = np.log2((m + 1) / (expected + 1))
     return pd.DataFrame(
         m.reshape(len(counts), -1), index=counts.index, columns=counts.columns
     )

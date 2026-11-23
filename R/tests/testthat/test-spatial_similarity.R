@@ -84,16 +84,19 @@ test_that("sample_normalize divides counts by their total", {
   expect_sim(sim, 1 - (sqrt(6) / 12) / dmax, 1 - sqrt(4 / 3) / dmax, 0)
 })
 
-test_that("label_normalize gives log2 of observed / expected counts", {
-  # A's counts (a-a 2, a-b 2, b-b 0) have degrees 4 and 2 and 2m = 6, so a-a
-  # is 2 * 6 / 16 = 3/4 and a-b 3/2; B's (2, 1, 0) give 8/9 and 4/3; C's only
-  # b-b gives 1. log2 of 1, and of the 0s, is 0, so C is all 0
-  dist <- function(aa, ab) sqrt(log2(aa)^2 + 2 * log2(ab)^2)
-  dmax <- dist(3 / 4, 3 / 2)
+test_that("label_normalize gives log2 of (observed + 1) / (expected + 1)", {
+  # A's counts (a-a 2, a-b 2, b-b 0) have degrees 4 and 2 and 2m = 6, so
+  # expect 8/3, 4/3 and 2/3, giving ratios 9/11, 9/7 and 3/5; B's (2, 1, 0)
+  # give 12/13, 8/7 and 4/5; C's (0, 0, 2) are all as expected, so log2 0
+  dist <- function(aa, ab, bb) sqrt(log2(aa)^2 + 2 * log2(ab)^2 + log2(bb)^2)
+  dmax <- dist(9 / 11, 9 / 7, 3 / 5)
   sim <- spatial_similarity(samples, "x", "y", "label",
     sample_normalize = FALSE, label_normalize = TRUE
   )
-  expect_sim(sim, 1 - dist(27 / 32, 9 / 8) / dmax, 0, 1 - dist(8 / 9, 4 / 3) / dmax)
+  expect_sim(
+    sim, 1 - dist(39 / 44, 9 / 8, 3 / 4) / dmax, 0,
+    1 - dist(12 / 13, 8 / 7, 4 / 5) / dmax
+  )
   expect_error(
     spatial_similarity(samples, "x", "y", "label", label_normalize = TRUE),
     "not both"

@@ -10,15 +10,22 @@
 #' @param labels Name of the column holding the labels (e.g. cell types).
 #' @param sample_normalize Divide each sample's connection counts by their
 #'   total to control for sample size.
-#' @param label_normalize Control for the size of each label (#NEW): divide
-#'   each count by the count expected if connections were made at random given
-#'   each label's degree (its total connections, including to itself), as in
-#'   the configuration model: observed / expected = A_ij * 2m / (d_i d_j),
-#'   where 2m is the sum of all counts. 1 means as often as chance, above 1
-#'   enriched, below 1 avoided; entries of labels absent from a sample are 0.
-#'   Then log2 (#NEW), with log2(0) set to 0.
-#'   Applied after pooling. Use instead of `sample_normalize`: set
-#'   `sample_normalize = FALSE`.
+#' @param label_normalize Control for the prevalence of each label by
+#'   normalizing connection counts with respect to their expected values if
+#'   spot/cell connections were randomised (follows the configuration model
+#'   from graph theory, a permutation-free version of squidpy's
+#'   `gr.nhood_enrichment`). If the expected number of connections between
+#'   labels `i` and `j` under this randomisation is `E_ij = d_i d_j / 2m`
+#'   (where `d_i` is the number of connections originating at label `i` and
+#'   `2m = sum_i d_i` is the total number of connections, counted from both
+#'   originating labels), then the observed count `A_ij` is normalized as
+#'   `log2((A_ij + 1) / (E_ij + 1))`. Following normalization, 0 means a
+#'   connection was observed as often as expected, above 0 means it was
+#'   observed more often than this and below 0 means less often. The
+#'   pseudocount of 1 ensures normalized counts between labels that never
+#'   neighbor one another remain finite and gives labels absent from a
+#'   sample 0. This step is applied after pooling. Mutually exclusive with
+#'   `sample_normalize`.
 #' @param pools Optional named list mapping pool names to sample names;
 #'   connection counts are summed within each pool.
 #' @param only_transitions If `TRUE`, only count connections between spots with
@@ -123,13 +130,10 @@ spatial_similarity <- function(samples, x, y, labels,
     n <- length(all_labels)
     counts <- t(apply(counts, 1, function(v) {
       m <- matrix(v, n, n, byrow = TRUE)
-      expected <- outer(rowSums(m), rowSums(m))
-      m <- m * sum(m) / expected
-      # absent labels have no expected count; set to 0
-      m[expected == 0] <- 0
-      # log2 so 2x and 0.5x are equally far from chance; log2(0) set to 0 (the same as chance)
-      m[m > 0] <- log2(m[m > 0])
-      as.vector(t(m))
+      expected <- outer(rowSums(m), rowSums(m)) / max(sum(m), 1)
+      # log2 so 2x and 0.5x are equally far from chance; the pseudocount
+      # keeps pairs that never touch finite
+      as.vector(t(log2((m + 1) / (expected + 1))))
     }))
   }
   if (sample_normalize) {

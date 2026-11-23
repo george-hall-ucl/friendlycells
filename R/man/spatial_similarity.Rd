@@ -30,13 +30,22 @@ unit (e.g. pixels or micrometres) consistent between samples.}
 \item{sample_normalize}{Divide each sample's connection counts by their
 total to control for sample size.}
 
-\item{label_normalize}{Control for the size of each label: add one
-connection of every label to itself, divide each count by the square root
-of the two labels' connections to themselves (so each label's connections
-to itself become 1), then divide each label's counts by their sum (its
-degree), so each label's counts become the proportions of its neighbors'
-labels, as in one step of a random walk. Applied after pooling. Use
-instead of \code{sample_normalize}: set \code{sample_normalize = FALSE}.}
+\item{label_normalize}{Control for the prevalence of each label by
+normalizing connection counts with respect to their expected values if
+spot/cell connections were randomised (follows the configuration model
+from graph theory, a permutation-free version of squidpy's
+\code{gr.nhood_enrichment}). If the expected number of connections between
+labels \code{i} and \code{j} under this randomisation is \verb{E_ij = d_i d_j / 2m}
+(where \code{d_i} is the number of connections originating at label \code{i} and
+\verb{2m = sum_i d_i} is the total number of connections, counted from both
+originating labels), then the observed count \code{A_ij} is normalized as
+\code{log2((A_ij + 1) / (E_ij + 1))}. Following normalization, 0 means a
+connection was observed as often as expected, above 0 means it was
+observed more often than this and below 0 means less often. The
+pseudocount of 1 ensures normalized counts between labels that never
+neighbor one another remain finite and gives labels absent from a
+sample 0. This step is applied after pooling. Mutually exclusive with
+\code{sample_normalize}.}
 
 \item{pools}{Optional named list mapping pool names to sample names;
 connection counts are summed within each pool.}
