@@ -251,3 +251,84 @@ plot_similarity(sim)
 The anterior sections are most similar to each other, as are the posterior
 sections, while anterior and posterior sections are dissimilar.
 
+
+## Options
+
+### Only transitions
+
+Under `only_transitions`, only connections between different labels count, so
+the samples are compared by how their regions meet rather than how large they
+are.
+
+::: {.panel-tabset group="language"}
+## R
+
+```{r}
+#| label: r-transitions
+#| fig-width: 6
+#| fig-height: 5
+#| out-width: 60%
+sim <- spatial_similarity(samples, "x", "y", "label", only_transitions = TRUE)
+round(sim, 2)
+plot_similarity(sim)
+```
+
+## Python
+
+```{python}
+#| label: py-transitions
+#| jupyter_compat: true
+#| fig-width: 6
+#| fig-height: 5
+#| out-width: 60%
+sim = spatial_similarity(samples, "x", "y", "label", only_transitions=True)
+print(sim.round(2))
+plot_similarity(sim)
+```
+:::
+
+The anterior and posterior sections are still different, but the similarity
+scores within each are smaller (0.84 and 0.85, compared to 0.93 and 0.92): part
+of their high similarity scores came from connections within large regions of
+one label.
+
+### Label normalization
+
+With `label_normalize`, each connection count between two labels is normalized
+with respect to both labels' total connections. This means that connections
+associated with abundant labels no longer dominate the comparison.
+
+::: {.panel-tabset group="language"}
+## R
+
+```{r}
+#| label: r-label-normalize
+#| fig-width: 6
+#| fig-height: 5
+#| out-width: 60%
+sim <- spatial_similarity(samples, "x", "y", "label",
+                          sample_normalize = FALSE, label_normalize = TRUE)
+round(sim, 2)
+plot_similarity(sim)
+```
+
+## Python
+
+```{python}
+#| label: py-label-normalize
+#| jupyter_compat: true
+#| fig-width: 6
+#| fig-height: 5
+#| out-width: 60%
+sim = spatial_similarity(
+    samples, "x", "y", "label", sample_normalize=False, label_normalize=True
+)
+print(sim.round(2))
+plot_similarity(sim)
+```
+:::
+
+The anterior and posterior sections are still different, but the two anterior
+sections are much less alike than without `label_normalize` (0.55, from 0.93).
+This means that the higher similarity score was partly explained by similarity
+in connection profiles of abundant labels.
