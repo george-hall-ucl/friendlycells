@@ -10,7 +10,8 @@ Computes spatial similarity between spatial transcriptomics samples by counting 
 ## R
 
 ```r
-spatial_similarity(samples, x, y, labels, normalize = TRUE, pools = NULL,
+spatial_similarity(samples, x, y, labels, sample_normalize = TRUE,
+                   label_normalize = FALSE, pools = NULL,
                    only_transitions = FALSE,
                    neighborhood = c("auto", "radius", "knn", "delaunay"),
                    radius = NULL, k = 6)
@@ -19,8 +20,9 @@ spatial_similarity(samples, x, y, labels, normalize = TRUE, pools = NULL,
 ## Python
 
 ```python
-spatial_similarity(samples, x, y, labels, normalize=True, pools=None,
-                   only_transitions=False, neighborhood="auto", radius=None, k=6)
+spatial_similarity(samples, x, y, labels, sample_normalize=True,
+                   label_normalize=False, pools=None, only_transitions=False,
+                   neighborhood="auto", radius=None, k=6)
 ```
 :::
 
@@ -37,9 +39,27 @@ spatial_similarity(samples, x, y, labels, normalize=True, pools=None,
 `labels`
 : Name of the column holding the labels (e.g. cell types).
 
-`normalize`
+`sample_normalize`
 : Divide each sample's connection counts by their total to control for sample
   size.
+
+`label_normalize`
+: Control for the prevalence of each label by normalizing connection counts
+  with respect to their expected values if spot/cell connections were
+  randomised (follows the configuration model from graph theory, a
+  permutation-free version of `squidpy`'s
+  [`gr.nhood_enrichment`](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.nhood_enrichment.html)).
+  If the expected number of connections between labels i and j under this
+  randomisation is $E_{ij} = d_i d_j / 2m$ (where $d_i$ is the number of
+  connections originating at label $i$ and $2m = \sum_i d_i$ is the total
+  number of connections, counted from both originating labels), then the
+  observed count $A_{ij}$ is normalized as $\log_2((A_{ij} + 1) / (E_{ij} +
+  1))$. Following normalization, 0 means a connection was observed as often as
+  expected, above 0 means it was observed more often than this and below 0
+  means less often.  The pseudocount of 1 ensures normalized counts between
+  labels that never neighbor one another remain finite and gives labels absent
+  from a sample 0.  This step is applied after pooling. Mutually exclusive with
+  `sample_normalize`.
 
 `pools`
 : Optional [named list]{.lang-r}[dict]{.lang-py} mapping pool names to
@@ -79,8 +99,8 @@ spatial_similarity(samples, x, y, labels, normalize=True, pools=None,
 A symmetric [matrix]{.lang-r}[DataFrame]{.lang-py} of similarities, with rows
 and columns named by sample (or pool) in input order. Similarities lie in
 \[0, 1\]: 1 = identical, 0 = least similar pair. With
-[`normalize = TRUE`]{.lang-r}[`normalize=True`]{.lang-py}, samples with no
-neighbouring spots (or, with
+[`sample_normalize = TRUE`]{.lang-r}[`sample_normalize=True`]{.lang-py},
+samples with no neighbouring spots (or, with
 [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py}, no
 neighbouring spots with different labels) get [`NA`]{.lang-r}[`NaN`]{.lang-py}.
 
@@ -91,10 +111,11 @@ one another (e.g. how often a `Neuron` borders an `Astrocyte`). With
 [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py},
 connections between identical labels are excluded. These connection counts form
 one vector per sample, which is optionally pooled (across samples) and
-normalised (within each sample, by its total). The similarity score between two
-samples is given by `1 - (d / max(d))`, where `d` is the Euclidean distance
-between two samples' vectors and `max(d)` is the maximum distance across all
-pairs of samples/pools.
+normalised (within each sample, by its total, or, with `label_normalize`,
+against the counts expected by chance given each label's connections). The
+similarity score between two samples is given by `1 - (d / max(d))`, where `d`
+is the Euclidean distance between two samples' vectors and `max(d)` is the
+maximum distance across all pairs of samples/pools.
 
 ### Extracting positions
 
@@ -163,7 +184,7 @@ neighborhood definition includes the spots / cells you expect.
   into missing values; read them with
   [`na.strings = character(0)`]{.lang-r}[`keep_default_na=False`]{.lang-py} to
   keep the text.
-- With [`normalize = TRUE`]{.lang-r}[`normalize=True`]{.lang-py}, samples with
+- With [`sample_normalize = TRUE`]{.lang-r}[`sample_normalize=True`]{.lang-py}, samples with
   no neighbouring spots (or, with
   [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py}, no
   neighbouring spots with different labels) are named in a warning, and their

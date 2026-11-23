@@ -13,7 +13,8 @@ def spatial_similarity(
     x,
     y,
     labels,
-    normalize=True,
+    sample_normalize=True,
+    label_normalize=False,
     pools=None,
     only_transitions=False,
     neighborhood="auto",
@@ -27,8 +28,24 @@ def spatial_similarity(
     x, y: names of the columns holding the positions of spots/cells, in any
         unit (e.g. pixels or micrometres) consistent between samples.
     labels: name of the column holding the labels (e.g. cell types).
-    normalize: divide each sample's connection counts by their total to
-        control for sample size.
+    sample_normalize: divide each sample's connection counts by their total
+        to control for sample size.
+    label_normalize: control for the prevalence of each label by normalizing
+        connection counts with respect to their expected values if spot/cell
+        connections were randomised (follows the configuration model from
+        graph theory, a permutation-free version of squidpy's
+        gr.nhood_enrichment). If the expected number of connections between
+        labels i and j under this randomisation is E_ij = d_i d_j / 2m (where
+        d_i is the number of connections originating at label i and
+        2m = sum_i d_i is the total number of connections, counted from both
+        originating labels), then the observed count A_ij is normalized as
+        log2((A_ij + 1) / (E_ij + 1)). Following normalization, 0 means a
+        connection was observed as often as expected, above 0 means it was
+        observed more often than this and below 0 means less often. The
+        pseudocount of 1 ensures normalized counts between labels that never
+        neighbor one another remain finite and gives labels absent from a
+        sample 0. This step is applied after pooling. Mutually exclusive with
+        sample_normalize.
     pools: optional dict mapping pool names to lists of sample names;
         connection counts are summed within each pool.
     only_transitions: if True, only count connections between spots with
@@ -50,7 +67,7 @@ def spatial_similarity(
     k: number of nearest neighbors for neighborhood="knn". Ties are broken
         arbitrarily.
     Returns a symmetric DataFrame of similarities in [0, 1], or NaN for
-    samples with no neighboring spots when normalize=True.
+    samples with no neighboring spots when sample_normalize=True.
 
     Under default settings, the neighbourhoods of each sample's spots/cells
     depend on technology:
@@ -65,6 +82,11 @@ def spatial_similarity(
     is taken over all samples, don't mix samples in different units or from
     different technologies.
     """
+    if sample_normalize and label_normalize:
+        raise ValueError(
+            "Use either sample_normalize or label_normalize, not both: "
+            "set sample_normalize=False to use label_normalize."
+        )
     neighborhood, radius = _neighborhood_settings(
         samples, {"x": x, "y": y, "labels": labels}, neighborhood, radius
     )
@@ -91,7 +113,9 @@ def spatial_similarity(
         counts = pd.DataFrame(
             {name: counts.loc[members].sum() for name, members in pools.items()}
         ).T
-    if normalize:
+    if label_normalize:
+        counts = _label_normalize(counts, len(all_labels))
+    if sample_normalize:
         totals = counts.sum(axis=1)
         if (totals == 0).any():
             warnings.warn(
@@ -112,6 +136,21 @@ def spatial_similarity(
     if d_max > 0:
         d = d / d_max
     return pd.DataFrame(1 - d, index=counts.index, columns=counts.index)
+
+
+def _label_normalize(counts, n):
+    """Each sample's n x n table as log2((observed + 1) / (expected + 1)),
+    where the expected count between labels i and j is d_i * d_j / 2m."""
+    m = counts.to_numpy(dtype=float).reshape(-1, n, n)
+    degree = m.sum(axis=2)
+    total = np.maximum(degree.sum(axis=1), 1)[:, None, None]
+    expected = degree[:, :, None] * degree[:, None, :] / total
+    # log2 so 2x and 0.5x are equally far from chance; the pseudocount keeps
+    # pairs that never touch finite
+    m = np.log2((m + 1) / (expected + 1))
+    return pd.DataFrame(
+        m.reshape(len(counts), -1), index=counts.index, columns=counts.columns
+    )
 
 
 def _neighborhood_settings(samples, columns, neighborhood, radius):

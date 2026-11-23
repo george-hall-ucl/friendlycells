@@ -118,6 +118,9 @@
 }
 .algo-link.algo-counted { stroke-opacity: 0.55; }
 .algo-cell { fill: var(--bs-primary); fill-opacity: 0; transition: fill-opacity 0.3s; }
+/* Below 0 under label_normalize: neighbors less often than chance */
+.algo-cell.algo-cell-neg { fill: #D55E00; }
+.algo-emphasis { font-weight: bold; fill: var(--bs-primary); }
 .algo-frame { fill: none; stroke: currentColor; stroke-opacity: 0.25; }
 .algo-on-dark { fill: #fff; }
 .algo-bar {
