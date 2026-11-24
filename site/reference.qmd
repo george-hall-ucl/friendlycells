@@ -34,7 +34,7 @@ spatial_similarity(samples, x, y, labels, sample_normalize=True,
 
 `x`, `y`
 : Names of the columns holding the positions of spots/cells, in any unit (e.g.
-  pixels or micrometres) consistent between samples.
+  pixels or micrometers) consistent between samples.
 
 `labels`
 : Name of the column holding the labels (e.g. cell types).
@@ -46,11 +46,11 @@ spatial_similarity(samples, x, y, labels, sample_normalize=True,
 `label_normalize`
 : Control for the prevalence of each label by normalizing connection counts
   with respect to their expected values if spot/cell connections were
-  randomised (follows the configuration model from graph theory, a
+  randomized (follows the configuration model from graph theory, a
   permutation-free version of `squidpy`'s
   [`gr.nhood_enrichment`](https://squidpy.readthedocs.io/en/stable/api/squidpy.gr.nhood_enrichment.html)).
   If the expected number of connections between labels i and j under this
-  randomisation is $E_{ij} = d_i d_j / 2m$ (where $d_i$ is the number of
+  randomization is $E_{ij} = d_i d_j / 2m$ (where $d_i$ is the number of
   connections originating at label $i$ and $2m = \sum_i d_i$ is the total
   number of connections, counted from both originating labels), then the
   observed count $A_{ij}$ is normalized as $\log_2((A_{ij} + 1) / (E_{ij} +
@@ -73,7 +73,7 @@ spatial_similarity(samples, x, y, labels, sample_normalize=True,
   spots with the same label.
 
 `neighborhood`
-: Definition of the neighbourhood of each spot/cell: `"radius"` selects all
+: Definition of the neighborhood of each spot/cell: `"radius"` selects all
   within `radius`; `"knn"` selects the `k` nearest (symmetric: both are
   included in each other's neighborhood if either is among the other's
   nearest); or `"delaunay"` selects those surrounding it by Delaunay
@@ -100,18 +100,18 @@ A symmetric [matrix]{.lang-r}[DataFrame]{.lang-py} of similarities, with rows
 and columns named by sample (or pool) in input order. Similarities lie in
 \[0, 1\]: 1 = identical, 0 = least similar pair. With
 [`sample_normalize = TRUE`]{.lang-r}[`sample_normalize=True`]{.lang-py},
-samples with no neighbouring spots (or, with
+samples with no neighboring spots (or, with
 [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py}, no
-neighbouring spots with different labels) get [`NA`]{.lang-r}[`NaN`]{.lang-py}.
+neighboring spots with different labels) get [`NA`]{.lang-r}[`NaN`]{.lang-py}.
 
 ### Details
 
-Each sample is characterised in terms of the number of times labels neighbor
+Each sample is characterized in terms of the number of times labels neighbor
 one another (e.g. how often a `Neuron` borders an `Astrocyte`). With
 [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py},
 connections between identical labels are excluded. These connection counts form
 one vector per sample, which is optionally pooled (across samples) and
-normalised (within each sample, by its total, or, with `label_normalize`,
+normalized (within each sample, by its total, or, with `label_normalize`,
 against the counts expected by chance given each label's connections). The
 similarity score between two samples is given by `1 - (d / max(d))`, where `d`
 is the Euclidean distance between two samples' vectors and `max(d)` is the
@@ -159,7 +159,7 @@ df = pd.DataFrame({"x": cells.x, "y": cells.y, "label": adata.obs["cell_type"]})
 
 ### Neighbors
 
-Under default settings, the neighbourhoods of each sample's spots/cells depend
+Under default settings, the neighborhoods of each sample's spots/cells depend
 on technology:
 
 | Data | Neighborhood |
@@ -168,7 +168,7 @@ on technology:
 | Visium HD bins | Four side neighbors; set `radius` to 1.5 times the bin size to add the diagonals |
 | Segmented cells (Xenium, or Visium HD with cell segmentation) | The cells surrounding them, ignoring links across gaps |
 
-Positions can be the pixel or micrometre coordinates from Space Ranger or
+Positions can be the pixel or micrometer coordinates from Space Ranger or
 Xenium outputs, as long as all samples use the same units. As the spacing is
 taken over all samples, don't mix samples in different units or from different
 technologies.
@@ -185,9 +185,9 @@ neighborhood definition includes the spots / cells you expect.
   [`na.strings = character(0)`]{.lang-r}[`keep_default_na=False`]{.lang-py} to
   keep the text.
 - With [`sample_normalize = TRUE`]{.lang-r}[`sample_normalize=True`]{.lang-py}, samples with
-  no neighbouring spots (or, with
+  no neighboring spots (or, with
   [`only_transitions = TRUE`]{.lang-r}[`only_transitions=True`]{.lang-py}, no
-  neighbouring spots with different labels) are named in a warning, and their
+  neighboring spots with different labels) are named in a warning, and their
   similarities are [`NA`]{.lang-r}[`NaN`]{.lang-py}.
 
 ## `plot_neighborhoods()` {#plot_neighborhoods}

@@ -7,7 +7,7 @@ knitr:
 ---
 
 This example uses four Visium mouse brain sections from 10x Genomics (two
-anterior, two posterior), with each spot labelled by its most enriched of five
+anterior, two posterior), with each spot labeled by its most enriched of five
 marker genes.
 
 <details>

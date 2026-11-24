@@ -47,7 +47,7 @@ whose names you give to `spatial_similarity()`:
 
 * `x`: horizontal coordinates of each spot/cell (any unit, but must be the same in each sample);
 * `y`: vertical coordinates of each spot/cell, in the same unit as `x`;
-* `labels`: metadata used to characterise spatial regions, e.g. cell types.
+* `labels`: metadata used to characterize spatial regions, e.g. cell types.
 
 Select your language and technology to see how to make this
 [list]{.lang-r}[dict]{.lang-py} and run `spatial_similarity()`.

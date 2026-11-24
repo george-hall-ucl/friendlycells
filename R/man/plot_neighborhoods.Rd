@@ -21,12 +21,12 @@ plot_neighborhoods(
 spot/cell.}
 
 \item{x, y}{Names of the columns holding the positions of spots/cells, in any
-unit (e.g. pixels or micrometres) consistent between samples.}
+unit (e.g. pixels or micrometers) consistent between samples.}
 
 \item{samples_to_plot}{Names of the samples to plot. By default, plot all
 samples.}
 
-\item{neighborhood}{Definition of the neighbourhood of each spot/cell:
+\item{neighborhood}{Definition of the neighborhood of each spot/cell:
 \code{"radius"} selects all within \code{radius}; \code{"knn"} selects the \code{k} nearest
 (symmetric: both are included in each other's neighborhood if either is
 among the other's nearest); or \code{"delaunay"} selects those surrounding it by

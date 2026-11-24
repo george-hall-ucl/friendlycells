@@ -6,16 +6,16 @@
 #' @param samples Named list of data frames, one per sample, with a row per
 #'   spot/cell.
 #' @param x,y Names of the columns holding the positions of spots/cells, in any
-#'   unit (e.g. pixels or micrometres) consistent between samples.
+#'   unit (e.g. pixels or micrometers) consistent between samples.
 #' @param labels Name of the column holding the labels (e.g. cell types).
 #' @param sample_normalize Divide each sample's connection counts by their
 #'   total to control for sample size.
 #' @param label_normalize Control for the prevalence of each label by
 #'   normalizing connection counts with respect to their expected values if
-#'   spot/cell connections were randomised (follows the configuration model
+#'   spot/cell connections were randomized (follows the configuration model
 #'   from graph theory, a permutation-free version of squidpy's
 #'   `gr.nhood_enrichment`). If the expected number of connections between
-#'   labels `i` and `j` under this randomisation is `E_ij = d_i d_j / 2m`
+#'   labels `i` and `j` under this randomization is `E_ij = d_i d_j / 2m`
 #'   (where `d_i` is the number of connections originating at label `i` and
 #'   `2m = sum_i d_i` is the total number of connections, counted from both
 #'   originating labels), then the observed count `A_ij` is normalized as
@@ -31,7 +31,7 @@
 #' @param only_transitions If `TRUE`, only count connections between spots with
 #'   distinct labels (i.e. borders); does not count connections between spots
 #'   with the same label.
-#' @param neighborhood Definition of the neighbourhood of each spot/cell:
+#' @param neighborhood Definition of the neighborhood of each spot/cell:
 #'   `"radius"` selects all within `radius`; `"knn"` selects the `k` nearest
 #'   (symmetric: both are included in each other's neighborhood if either is
 #'   among the other's nearest); or `"delaunay"` selects those surrounding it by
@@ -46,7 +46,7 @@
 #'   for `"delaunay"`. Used to make neighborhoods wider or narrower.
 #' @param k Number of nearest neighbors for `neighborhood = "knn"`. Ties are
 #'   broken arbitrarily.
-#' @details Under default settings, the neighbourhoods of each sample's
+#' @details Under default settings, the neighborhoods of each sample's
 #'   spots/cells depend on technology:
 #'   * Visium spots: six immediate neighbors.
 #'   * Visium HD bins: four side neighbors. Set `radius` to 1.5 times the
@@ -54,7 +54,7 @@
 #'   * Segmented cells (Xenium, or Visium HD with cell segmentation): the cells
 #'     surrounding them, ignoring links across gaps.
 #'
-#'   Positions can be the pixel or micrometre coordinates from Space Ranger or
+#'   Positions can be the pixel or micrometer coordinates from Space Ranger or
 #'   Xenium outputs, as long as all samples use the same units. As the spacing
 #'   is taken over all samples, don't mix samples in different units or from
 #'   different technologies.

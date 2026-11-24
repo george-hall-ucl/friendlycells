@@ -27,7 +27,7 @@ section <- function(size, hole, label_of) {
   y <- grid$row * sqrt(3) / 2
   theta <- atan2(y, x)
   edge <- size * (1 + 0.12 * sin(2 * theta + 1) + 0.08 * cos(3 * theta))
-  # 0 at the centre, 1 at the edge
+  # 0 at the center, 1 at the edge
   depth <- sqrt(x^2 + y^2) / edge
   keep <- depth < 1 & sqrt((x - hole[1])^2 + (y - hole[2])^2) > hole[3]
   x <- x[keep]
@@ -103,7 +103,7 @@ cat(
 
 Our walkthrough uses simulated tissue on a hexagonal grid with spots colored
 according to their label ("A", "B", or "C"), which we can pretend represents
-cell type. Whilst this setting most closely resembles standard-definition
+cell type. While this setting most closely resembles standard-definition
 Visium, the explanations also apply to the other technologies.
 
 ::: {.algorithm-figure data-figure="spots"}
@@ -156,7 +156,7 @@ Finally, we convert distances to similarity scores by subtracting each from 1:
 $$s_{ij} = 1 - \frac{d_{ij}}{\max d}$$
 
 
-A similarity of 1 means that two samples have identical profiles, whilst 0
+A similarity of 1 means that two samples have identical profiles, while 0
 corresponds to the least similar pair.
 
 ::: {.algorithm-figure data-figure="similarity"}

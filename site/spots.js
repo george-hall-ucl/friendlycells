@@ -1,5 +1,5 @@
 // Faces on a Visium-like grid behind the navbar, each looking at its
-// neighbours in turn, like the logo
+// neighbors in turn, like the logo
 (() => {
   const navbar = document.querySelector(".navbar");
   if (!navbar) return;

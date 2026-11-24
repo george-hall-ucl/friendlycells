@@ -86,7 +86,7 @@
   const fit = (samples, width, height) => Math.min(...samples.map((s) => Math.min(
     width / (Math.max(...s.x) + 1), height / (Math.max(...s.y) + 1),
   )));
-  // A sample's links and spots, scaled and centred in the box [x, y, w, h]
+  // A sample's links and spots, scaled and centered in the box [x, y, w, h]
   const drawSample = (parent, sample, [x, y, w, h], scale, withLinks) => {
     const dx = x + (w - Math.max(...sample.x) * scale) / 2;
     const dy = y + (h - Math.max(...sample.y) * scale) / 2;
@@ -207,7 +207,7 @@
   };
 
   const figures = {
-    // 1. The samples' labelled spots appear, in a random order
+    // 1. The samples' labeled spots appear, in a random order
     async spots(svg, run) {
       svg.setAttribute("viewBox", "0 0 640 230");
       const width = 640 / n;
@@ -663,7 +663,7 @@
   };
 
   const descriptions = {
-    spots: "Three tissue sections of labelled spots.",
+    spots: "Three tissue sections of labeled spots.",
     links: "Links drawn between each spot and its neighbors.",
     counts: "Each sample's links counted in turn into its label by label table.",
     profile: "Each sample's table as bars of counts, then of proportions, on shared axes.",
