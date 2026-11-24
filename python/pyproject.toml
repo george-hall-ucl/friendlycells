@@ -12,7 +12,7 @@ authors = [
     { name = "Sergi Castellano", email = "s.castellano@ucl.ac.uk" },
 ]
 maintainers = [{ name = "George Hall", email = "george.hall@ucl.ac.uk" }]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["numpy", "pandas", "scipy"]
