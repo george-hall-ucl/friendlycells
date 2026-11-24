@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "friendlycells"
-version = "0.1.0"
+version = "1.0.0"
 description = "Spatial similarity of spatial transcriptomics samples"
 readme = "README.md"
 authors = [

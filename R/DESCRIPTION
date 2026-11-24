@@ -1,6 +1,6 @@
 Package: friendlycells
 Title: Spatial Similarity of Spatial Transcriptomics Samples
-Version: 0.1.0
+Version: 1.0.0
 Authors@R: c(
     person(given = "George",
            family = "Hall",
