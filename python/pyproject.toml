@@ -13,7 +13,7 @@ authors = [
 ]
 maintainers = [{ name = "George Hall", email = "george.hall@ucl.ac.uk" }]
 requires-python = ">=3.9"
-license = "GPL-3.0-or-later"
+license = "MIT"
 license-files = ["LICENSE"]
 dependencies = ["numpy", "pandas", "scipy"]
 
