@@ -5,11 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "friendlycells"
 version = "1.0.0"
-description = "Spatial similarity of spatial transcriptomics samples"
+description = "Alignment-free similarity measures for spatial transcriptomics."
 readme = "README.md"
 authors = [
     { name = "George Hall", email = "george.hall@ucl.ac.uk" },
     { name = "Sergi Castellano", email = "s.castellano@ucl.ac.uk" },
+    { name = "Anna Drhovska", email = "annadrhovska@gmail.com" },
 ]
 maintainers = [{ name = "George Hall", email = "george.hall@ucl.ac.uk" }]
 requires-python = ">=3.11"

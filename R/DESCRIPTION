@@ -1,5 +1,5 @@
 Package: friendlycells
-Title: Spatial Similarity of Spatial Transcriptomics Samples
+Title: Alignment-Free Similarity Measures for Spatial Transcriptomics
 Version: 1.0.0
 Authors@R: c(
     person(given = "George",
@@ -12,6 +12,10 @@ Authors@R: c(
            role = c("aut"),
            email = "s.castellano@ucl.ac.uk",
            comment = c(ORCID = "0000-0002-5819-4210")),
+    person(given = "Anna",
+           family = "Drhovska",
+           role = c("aut"),
+           email = "annadrhovska@gmail.com"),
     person(given = "University College London",
            role = c("cph")))
 Description: Computes the similarity between spatial transcriptomics
